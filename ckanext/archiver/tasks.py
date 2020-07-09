@@ -582,11 +582,16 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
 
     Returns: {cache_filepath, cache_url}
     """
-    from ckanext.archiver import default_settings as settings
+
+    # Return the key used for this resource in S3.
+    #
+    # Keys are in the form:
+    # <uploaderpath>/<upload_to>/<2 char from resource id >/<resource id>/<filename>
+    #
+    # e.g.:
+    # my_storage_path/archive/16/165900ba-3c60-43c5-9e9c-9f8acd0aa93f/data.csv
     relative_archive_path = os.path.join(resource['id'][:2], resource['id'])
-    archive_dir = os.path.join(settings.ARCHIVE_DIR, relative_archive_path)
-    if not os.path.exists(archive_dir):
-        os.makedirs(archive_dir)
+
     # try to get a file name from the url
     parsed_url = urlparse.urlparse(resource.get('url'))
     try:
@@ -597,16 +602,24 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
         file_name = "resource"
 
     # Get an uploader, set the fields required to upload and upload up.
-    saved_file =  '/archive/' + file_name
-    saved_file_internal = resource['id'] + saved_file
-    upload = uploader.get_uploader('resources', saved_file_internal)
-    upload.upload_file(result['saved_file'])
+    saved_file_internal = os.path.join(relative_archive_path, resource['id'], file_name )
+
+    from werkzeug.datastructures import FileStorage as FlaskFileStorage
+    toUpload = []
+    # we use the Upload class to push to our preferred filestorage solution
+    toUpload['fileStorage'] = FlaskFileStorage(filename=saved_file_internal, stream=open(result['saved_file']), content_type=result['saved_file'])
+    upload = uploader.get_uploader('archive')
+    upload.update_data_dict(toUpload, 'url_field' ,'fileStorage')
     upload.upload(result['size'])
+    # delete temp file now that its in real location
+    try:
+        os.remove(result['saved_file'])
+    except OSError:
+        pass
 
     cache_url = urlparse.urljoin(config.get('ckan.site_url', ''),
-                                 '/dataset/%s/resource/%s/download%s' % resource['package_id'], resource['id'], saved_file )
+                                 '/dataset/%s/resource/%s/archive%s' % resource['package_id'], resource['id'], file_name )
 
-    
     return {'cache_filepath': saved_file_internal,
             'cache_url': cache_url}
 
