@@ -208,7 +208,6 @@ class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
                 res['archiver'] = archival_dict
 
     # IRoutes
-
     def before_map(self, map):
         with SubMapper(map, controller='ckanext.archiver.controller:ArchiverController') as m:
             # Override the resource download links
@@ -218,9 +217,8 @@ class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
             m.connect('archive_download',
                       '/dataset/{id}/resource/{resource_id}/archive/{filename}',
                       action='archive_download')
-
-
         return map
+
 
 class TestIPipePlugin(p.SingletonPlugin):
     """

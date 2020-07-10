@@ -6,7 +6,6 @@ import json
 import urllib
 import urlparse
 import tempfile
-import shutil
 import datetime
 import copy
 import mimetypes
@@ -602,14 +601,15 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
         file_name = "resource"
 
     # Get an uploader, set the fields required to upload and upload up.
-    saved_file_internal = os.path.join(relative_archive_path, resource['id'], file_name )
+    saved_file_internal = os.path.join(relative_archive_path, resource['id'], file_name)
 
     from werkzeug.datastructures import FileStorage as FlaskFileStorage
     toUpload = []
     # we use the Upload class to push to our preferred filestorage solution
-    toUpload['fileStorage'] = FlaskFileStorage(filename=saved_file_internal, stream=open(result['saved_file']), content_type=result['saved_file'])
+    toUpload['fileStorage'] = FlaskFileStorage(filename=saved_file_internal, stream=open(result['saved_file']),
+                                               content_type=result['saved_file'])
     upload = uploader.get_uploader('archive')
-    upload.update_data_dict(toUpload, 'url_field' ,'fileStorage')
+    upload.update_data_dict(toUpload, 'url_field', 'fileStorage')
     upload.upload(result['size'])
     # delete temp file now that its in real location
     try:
@@ -618,7 +618,7 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
         pass
 
     cache_url = urlparse.urljoin(config.get('ckan.site_url', ''),
-                                 '/dataset/%s/resource/%s/archive%s' % resource['package_id'], resource['id'], file_name )
+                                 '/dataset/%s/resource/%s/archive%s' % resource['package_id'], resource['id'], file_name)
 
     return {'cache_filepath': saved_file_internal,
             'cache_url': cache_url}

@@ -5,7 +5,7 @@ import ckan.logic as logic
 import ckan.lib.base as base
 import ckan.model as model
 import ckan.lib.uploader as uploader
-from ckan.common import _, request, c, response
+from ckan.common import _, c
 
 import logging
 log = logging.getLogger(__name__)
@@ -36,7 +36,6 @@ class ArchiverController(base.BaseController):
 
         # Archived files are only link's not uploads
         if resource.get('url_type') != 'upload':
-
 
             # Return the key used for this resource in S3.
             #
