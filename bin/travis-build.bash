@@ -45,8 +45,8 @@ echo "SOLR config..."
 # see https://github.com/ckan/ckan/issues/2972
 sed -i -e 's/solr_url.*/solr_url = http:\/\/127.0.0.1:8983\/solr/' ckan/test-core.ini
 
-echo "Installing dependency ckanext-report and its requirements..."
-pip install -e git+https://github.com/datagovuk/ckanext-report.git#egg=ckanext-report
+#echo "Installing dependency ckanext-report and its requirements..."
+#pip install -e git+https://github.com/datagovuk/ckanext-report.git#egg=ckanext-report
 
 echo "Installing ckanext-archiver and its requirements..."
 python setup.py develop
