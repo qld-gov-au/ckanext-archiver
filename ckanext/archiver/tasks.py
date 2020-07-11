@@ -604,10 +604,9 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
     saved_file_internal = os.path.join(relative_archive_path, resource['id'], file_name)
 
     from werkzeug.datastructures import FileStorage as FlaskFileStorage
-    toUpload = []
     # we use the Upload class to push to our preferred filestorage solution
-    toUpload['fileStorage'] = FlaskFileStorage(filename=saved_file_internal, stream=open(result['saved_file']),
-                                               content_type=result['saved_file'])
+    toUpload = {"fileStorage": FlaskFileStorage(
+        filename=saved_file_internal, stream=open(result['saved_file']), content_type=result['saved_file'])}
     upload = uploader.get_uploader('archive')
     upload.update_data_dict(toUpload, 'url_field', 'fileStorage')
     upload.upload(result['size'])
