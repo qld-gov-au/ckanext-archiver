@@ -608,7 +608,7 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
     toUpload = {"fileStorage": FlaskFileStorage(
         filename=saved_file_internal, stream=open(result['saved_file']), content_type=result['saved_file'])}
     upload = uploader.get_uploader('archive')
-    upload.update_data_dict(toUpload, 'url_field', 'fileStorage')
+    upload.update_data_dict(toUpload, 'url_field', 'fileStorage', 'clear_field')
     upload.upload(result['size'])
     # delete temp file now that its in real location
     try:
