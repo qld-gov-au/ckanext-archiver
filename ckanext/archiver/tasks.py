@@ -6,6 +6,7 @@ import json
 import urllib
 import urlparse
 import tempfile
+import shutil
 import datetime
 import copy
 import mimetypes
@@ -18,7 +19,9 @@ from requests.packages import urllib3
 from ckan.common import _
 from ckan.lib import uploader
 from ckan import plugins as p
+from ckan.lib.uploader import ResourceUpload as DefaultResourceUpload
 from ckanext.archiver import interfaces as archiver_interfaces
+from ckanext.archiver import default_settings as settings
 import ckantoolkit as toolkit
 
 import logging
@@ -31,6 +34,9 @@ toolkit = p.toolkit
 ALLOWED_SCHEMES = set(('http', 'https', 'ftp'))
 
 USER_AGENT = 'ckanext-archiver'
+
+# New version now encapsulates downloading via stream or redirect link.
+uploaderHasDownloadEnabled = hasattr(DefaultResourceUpload, "download")
 
 # CKAN 2.7 introduces new jobs system
 if p.toolkit.check_ckan_version(max_version='2.6.99'):
@@ -259,7 +265,6 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
     from ckan import model
     from pylons import config
     from ckan.plugins import toolkit
-    from ckanext.archiver import default_settings as settings
     from ckanext.archiver.model import Status, Archival
 
     get_action = toolkit.get_action
@@ -590,7 +595,11 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
     # e.g.:
     # my_storage_path/archive/16/165900ba-3c60-43c5-9e9c-9f8acd0aa93f/data.csv
     relative_archive_path = os.path.join(resource['id'][:2], resource['id'])
-
+    if not uploaderHasDownloadEnabled:
+        from ckanext.archiver import default_settings as settings
+        archive_dir = os.path.join(settings.ARCHIVE_DIR, relative_archive_path)
+        if not os.path.exists(archive_dir):
+            os.makedirs(archive_dir)
     # try to get a file name from the url
     parsed_url = urlparse.urlparse(resource.get('url'))
     try:
@@ -600,27 +609,50 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
     except Exception:
         file_name = "resource"
 
-    # Get an uploader, set the fields required to upload and upload up.
-    saved_file_internal = os.path.join(relative_archive_path, resource['id'], file_name)
+    if uploaderHasDownloadEnabled:
+        # Get an uploader, set the fields required to upload and upload up.
+        saved_file_internal = os.path.join(relative_archive_path, resource['id'], file_name)
 
-    from werkzeug.datastructures import FileStorage as FlaskFileStorage
-    # we use the Upload class to push to our preferred filestorage solution
-    toUpload = {"fileStorage": FlaskFileStorage(
-        filename=saved_file_internal, stream=open(result['saved_file']), content_type=result['saved_file'])}
-    upload = uploader.get_uploader('archive')
-    upload.update_data_dict(toUpload, 'url_field', 'fileStorage', 'clear_field')
-    upload.upload(result['size'])
-    # delete temp file now that its in real location
-    try:
-        os.remove(result['saved_file'])
-    except OSError:
-        pass
+        from werkzeug.datastructures import FileStorage as FlaskFileStorage
+        # we use the Upload class to push to our preferred filestorage solution
+        toUpload = {"fileStorage": FlaskFileStorage(
+            filename=saved_file_internal, stream=open(result['saved_file']), content_type=result['saved_file'])}
+        upload = uploader.get_uploader('archive')
+        upload.update_data_dict(toUpload, 'url_field', 'fileStorage', 'clear_field')
+        upload.upload(result['size'])
+        # delete temp file now that its in real location
+        try:
+            os.remove(result['saved_file'])
+        except OSError:
+            pass
 
-    cache_url = urlparse.urljoin(config.get('ckan.site_url', ''),
-                                 '/dataset/%s/resource/%s/archive%s' % resource['package_id'], resource['id'], file_name)
+        cache_url = urlparse.urljoin(config.get('ckan.site_url', ''),
+                                     "/dataset/%s/resource/%s/archive/%s".format(
+                                         resource['package_id'], resource['id'], file_name))
 
-    return {'cache_filepath': saved_file_internal,
-            'cache_url': cache_url}
+        return {'cache_filepath': saved_file_internal,
+                'cache_url': cache_url}
+    else:
+        # move the temp file to the resource's archival directory
+        saved_file = os.path.join(archive_dir, file_name)
+        shutil.move(result['saved_file'], saved_file)
+        log.info('Going to do chmod: %s', saved_file)
+        try:
+            os.chmod(saved_file, 0644)  # allow other users to read it
+        except Exception as e:
+            log.error('chmod failed %s: %s', saved_file, e)
+            raise
+        log.info('Archived resource as: %s', saved_file)
+
+        # calculate the cache_url
+        if not context.get('cache_url_root'):
+            log.warning('Not saved cache_url because no value for '
+                        'ckanext-archiver.cache_url_root in config')
+            raise ArchiveError(_('No value for ckanext-archiver.cache_url_root in config'))
+        cache_url = urlparse.urljoin(context['cache_url_root'],
+                                     '%s/%s' % (relative_archive_path, file_name))
+        return {'cache_filepath': saved_file,
+                'cache_url': cache_url}
 
 
 def notify_resource(resource, queue, cache_filepath):
@@ -668,7 +700,7 @@ def _set_user_agent_string(headers):
     Update the passed headers object with a `User-Agent` key, if there is a
     USER_AGENT_STRING option in settings.
     '''
-    from ckanext.archiver import default_settings as settings
+
     ua_str = settings.USER_AGENT_STRING
     if ua_str is not None:
         headers['User-Agent'] = ua_str
