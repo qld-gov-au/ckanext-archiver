@@ -611,13 +611,14 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
 
     if uploaderHasDownloadEnabled:
         # Get an uploader, set the fields required to upload and upload up.
-        saved_file_internal = os.path.join(relative_archive_path, resource['id'], file_name)
+        save_file_folder = os.path.join('archive', relative_archive_path, resource['id'])
 
         from werkzeug.datastructures import FileStorage as FlaskFileStorage
         # we use the Upload class to push to our preferred filestorage solution
         toUpload = {"fileStorage": FlaskFileStorage(
-            filename=saved_file_internal, stream=open(result['saved_file']), content_type=result['saved_file'])}
-        upload = uploader.get_uploader('archive')
+            filename=file_name, stream=open(result['saved_file']), content_type=result['saved_file']),
+            "preserve_filename": True}
+        upload = uploader.get_uploader(save_file_folder)
         upload.update_data_dict(toUpload, 'url_field', 'fileStorage', 'clear_field')
         upload.upload(result['size'])
         # delete temp file now that its in real location
@@ -627,11 +628,12 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
             pass
 
         cache_url = urlparse.urljoin(config.get('ckan.site_url', ''),
-                                     "/dataset/%s/resource/%s/archive/%s".format(
+                                     "/dataset/{0}/resource/{1}/archive/{2}".format(
                                          resource['package_id'], resource['id'], file_name))
-
-        return {'cache_filepath': saved_file_internal,
+        responsePayload = {'cache_filepath': os.path.join('archive', relative_archive_path, resource['id'], file_name),
                 'cache_url': cache_url}
+        logging.debug('file uploaded via Uploader to folder: %s, with filename: %s, responsePayload: %s', relative_archive_path, file_name, responsePayload)
+        return responsePayload
     else:
         # move the temp file to the resource's archival directory
         saved_file = os.path.join(archive_dir, file_name)
