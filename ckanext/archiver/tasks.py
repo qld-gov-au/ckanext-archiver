@@ -630,9 +630,11 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
         cache_url = urlparse.urljoin(config.get('ckan.site_url', ''),
                                      "/dataset/{0}/resource/{1}/archive/{2}".format(
                                          resource['package_id'], resource['id'], file_name))
-        responsePayload = {'cache_filepath': os.path.join('archive', relative_archive_path, resource['id'], file_name),
-                'cache_url': cache_url}
-        logging.debug('file uploaded via Uploader to folder: %s, with filename: %s, responsePayload: %s', relative_archive_path, file_name, responsePayload)
+        responsePayload = {'cache_filepath': os.path.join(
+            'archive', relative_archive_path, resource['id'], file_name), 'cache_url': cache_url}
+        logging.debug(
+            'file uploaded via Uploader to folder: %s, with filename: %s, responsePayload: %s', relative_archive_path,
+            file_name, responsePayload)
         return responsePayload
     else:
         # move the temp file to the resource's archival directory
