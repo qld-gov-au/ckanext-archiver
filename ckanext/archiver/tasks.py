@@ -611,7 +611,7 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
 
     if uploaderHasDownloadEnabled:
         # Get an uploader, set the fields required to upload and upload up.
-        save_file_folder = os.path.join('archive', relative_archive_path, resource['id'])
+        save_file_folder = os.path.join('archive', relative_archive_path)
 
         from werkzeug.datastructures import FileStorage as FlaskFileStorage
         # we use the Upload class to push to our preferred filestorage solution
