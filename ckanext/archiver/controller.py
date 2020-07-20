@@ -55,7 +55,6 @@ class ArchiverController(base.BaseController):
             except Exception:
                 file_name = "resource"
 
-            download_path = os.path.join(relative_archive_path, file_name)
             try:
                 upload = uploader.get_uploader(os.path.join('archive', relative_archive_path))
                 return upload.download(file_name)
