@@ -9,7 +9,6 @@ env:
 #    - CKANVERSION=2.7
     -  CKAN_GIT_REPO=ckan/ckan CKANVERSION=2.8
     -  CKAN_GIT_REPO=qld-gov-au/ckan CKAN_BRANCH=qgov-master
-    -  CKAN_GIT_REPO=qld-gov-au/ckan CKAN_BRANCH=updateUploaderForDeleteAndGetFileFunctions
 services:
     - redis-server
     - postgresql
