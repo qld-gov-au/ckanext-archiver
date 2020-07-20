@@ -304,12 +304,21 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
         hosted_externally = not url.startswith(config['ckan.site_url']) or urlparse.urlparse(filepath).scheme is not ''
         # if resource.get('resource_type') == 'file.upload' and not hosted_externally:
         if not hosted_externally:
-            log.info("Won't attemp to archive resource uploaded locally: %s" % resource['url'])
+            log.info("Won't attempt to archive resource uploaded locally: %s", resource['url'])
 
             try:
-                hash, length = _file_hashnlength(filepath)
-            except IOError, e:
-                log.error('Error while accessing local resource %s: %s', filepath, e)
+                if hasattr(upload, 'metadata'):
+                    file_metadata = upload.metadata(resource['id'])
+                    hash = file_metadata['hash']
+                    length = file_metadata['size']
+                    content_type = file_metadata['content_type']
+                else:
+                    # if the uploader can't provide metadata,
+                    # we just have to assume it's a local file.
+                    hash, length = _file_hashnlength(filepath)
+                    content_type, content_encoding = mimetypes.guess_type(url)
+            except IOError as e:
+                log.error('Error while accessing uploaded resource %s: %s', filepath, e)
 
                 download_status_id = Status.by_text('URL request failed')
                 _save(download_status_id, e, resource)
@@ -317,7 +326,6 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
 
             mimetype = None
             headers = {}
-            content_type, content_encoding = mimetypes.guess_type(url)
             if content_type:
                 mimetype = _clean_content_type(content_type)
                 headers = {'Content-Type': content_type}
@@ -630,10 +638,12 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
         cache_url = urlparse.urljoin(config.get('ckan.site_url', ''),
                                      "/dataset/{0}/resource/{1}/archive/{2}".format(
                                          resource['package_id'], resource['id'], file_name))
-        responsePayload = {'cache_filepath': os.path.join(
-            'archive', relative_archive_path, resource['id'], file_name), 'cache_url': cache_url}
+        responsePayload = {
+            'cache_filepath': os.path.join(save_file_folder, file_name),
+            'cache_url': cache_url
+        }
         logging.debug(
-            'file uploaded via Uploader to folder: %s, with filename: %s, responsePayload: %s', relative_archive_path,
+            'file uploaded via Uploader to folder: %s, with filename: %s, responsePayload: %s', save_file_folder,
             file_name, responsePayload)
         return responsePayload
     else:
