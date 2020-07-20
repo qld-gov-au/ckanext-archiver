@@ -118,7 +118,7 @@ class CeleryCmd(CkanCommand):
                 celery_config['CELERY_IMPORTS'].extend(
                     entry_point.load()()
                 )
-            except VersionConflict, e:
+            except VersionConflict as e:
                 error = 'ERROR in entry point load: %s %s' % (entry_point, e)
                 print error
                 pass

@@ -160,7 +160,7 @@ def update_resource(ckan_ini_filepath, resource_id, queue='bulk'):
     try:
         result = _update_resource(ckan_ini_filepath, resource_id, queue, log)
         return result
-    except Exception, e:
+    except Exception as e:
         if os.environ.get('DEBUG'):
             raise
         # Any problem at all is logged and reraised so that celery can log it too
@@ -184,7 +184,7 @@ def update_package(ckan_ini_filepath, package_id, queue='bulk'):
     # celery's task status.
     try:
         _update_package(ckan_ini_filepath, package_id, queue, log)
-    except Exception, e:
+    except Exception as e:
         if os.environ.get('DEBUG'):
             raise
         # Any problem at all is logged and reraised so that celery can log it
@@ -359,23 +359,23 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
         }
     try:
         download_result = download(context, resource)
-    except NotChanged, e:
+    except NotChanged as e:
         download_status_id = Status.by_text('Content has not changed')
         try_as_api = False
         requires_archive = False
-    except LinkInvalidError, e:
+    except LinkInvalidError as e:
         download_status_id = Status.by_text('URL invalid')
         try_as_api = False
-    except DownloadException, e:
+    except DownloadException as e:
         download_status_id = Status.by_text('Download error')
         try_as_api = True
-    except DownloadError, e:
+    except DownloadError as e:
         download_status_id = Status.by_text('Download error')
         try_as_api = True
-    except ChooseNotToDownload, e:
+    except ChooseNotToDownload as e:
         download_status_id = Status.by_text('Chose not to download')
         try_as_api = False
-    except Exception, e:
+    except Exception as e:
         if os.environ.get('DEBUG'):
             raise
         log.error('Uncaught download failure: %r, %r', e, e.args)
@@ -407,7 +407,7 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
     log.info('Attempting to archive resource')
     try:
         archive_result = archive_resource(context, resource, log, download_result)
-    except ArchiveError, e:
+    except ArchiveError as e:
         log.error('System error during archival: %r, %r', e, e.args)
         _save(Status.by_text('System error during archival'), e, resource, download_result['url_redirected_to'])
         return
@@ -542,7 +542,7 @@ def download(context, resource, url_timeout=30,
     log.info('Saving resource')
     try:
         length, hash, saved_file_path = _save_resource(resource, res, max_content_length)
-    except ChooseNotToDownload, e:
+    except ChooseNotToDownload as e:
         raise ChooseNotToDownload(str(e), url_redirected_to)
     log.info('Resource saved. Length: %s File: %s', length, saved_file_path)
 
@@ -749,7 +749,7 @@ def tidy_url(url):
     # caught well
     try:
         parsed_url = urllib3.util.parse_url(url)
-    except urllib3.exceptions.LocationParseError, e:
+    except urllib3.exceptions.LocationParseError as e:
         raise LinkInvalidError(_('URL parsing failure: %s') % e)
 
     # Check we aren't using any schemes we shouldn't be.
@@ -876,7 +876,7 @@ def requests_wrapper(log, func, *args, **kwargs):
     try:
         try:
             response = func(*args, **kwargs)
-        except requests.exceptions.ConnectionError, e:
+        except requests.exceptions.ConnectionError as e:
             if 'SSL23_GET_SERVER_HELLO' not in str(e):
                 raise
             log.info('SSLv23 failed so trying again using SSLv3: %r', args)
@@ -886,17 +886,17 @@ def requests_wrapper(log, func, *args, **kwargs):
                     requests.post: requests_session.post}[func]
             response = func(*args, **kwargs)
 
-    except requests.exceptions.ConnectionError, e:
+    except requests.exceptions.ConnectionError as e:
         raise DownloadException(_('Connection error: %s') % e)
-    except requests.exceptions.HTTPError, e:
+    except requests.exceptions.HTTPError as e:
         raise DownloadException(_('Invalid HTTP response: %s') % e)
-    except requests.exceptions.Timeout, e:
+    except requests.exceptions.Timeout as e:
         raise DownloadException(_('Connection timed out after %ss') % kwargs.get('timeout', '?'))
-    except requests.exceptions.TooManyRedirects, e:
+    except requests.exceptions.TooManyRedirects as e:
         raise DownloadException(_('Too many redirects'))
-    except requests.exceptions.RequestException, e:
+    except requests.exceptions.RequestException as e:
         raise DownloadException(_('Error downloading: %s') % e)
-    except Exception, e:
+    except Exception as e:
         if os.environ.get('DEBUG'):
             raise
         raise DownloadException(_('Error with the download: %s') % e)
@@ -950,11 +950,11 @@ def api_request(context, resource):
         resource_copy = copy.deepcopy(resource)
         try:
             download_dict = api_request_func(context, resource_copy)
-        except ArchiverError, e:
+        except ArchiverError as e:
             log.info('API %s error: %r, %r "%s"', api_request_func,
                      e, e.args, resource.get('url'))
             continue
-        except Exception, e:
+        except Exception as e:
             if os.environ.get('DEBUG'):
                 raise
             log.error('Uncaught API %s failure: %r, %r', api_request_func,
@@ -1027,25 +1027,25 @@ def link_checker(context, data):
     try:
         res = requests.head(url, timeout=url_timeout)
         headers = res.headers
-    except httplib.InvalidURL, ve:
+    except httplib.InvalidURL as ve:
         log.error("Could not make a head request to %r, error is: %s."
                   " Package is: %r. This sometimes happens when using an old version of requests on a URL"
                   " which issues a 301 redirect. Version=%s", url, ve, data.get('package'), requests.__version__)
         raise LinkHeadRequestError(_("Invalid URL or Redirect Link"))
-    except ValueError, ve:
+    except ValueError as ve:
         log.error("Could not make a head request to %r, error is: %s. Package is: %r.", url, ve, data.get('package'))
         raise LinkHeadRequestError(_("Could not make HEAD request"))
-    except requests.exceptions.ConnectionError, e:
+    except requests.exceptions.ConnectionError as e:
         raise LinkHeadRequestError(_('Connection error: %s') % e)
-    except requests.exceptions.HTTPError, e:
+    except requests.exceptions.HTTPError as e:
         raise LinkHeadRequestError(_('Invalid HTTP response: %s') % e)
-    except requests.exceptions.Timeout, e:
+    except requests.exceptions.Timeout as e:
         raise LinkHeadRequestError(_('Connection timed out after %ss') % url_timeout)
-    except requests.exceptions.TooManyRedirects, e:
+    except requests.exceptions.TooManyRedirects as e:
         raise LinkHeadRequestError(_('Too many redirects'))
-    except requests.exceptions.RequestException, e:
+    except requests.exceptions.RequestException as e:
         raise LinkHeadRequestError(_('Error during request: %s') % e)
-    except Exception, e:
+    except Exception as e:
         raise LinkHeadRequestError(_('Error with the request: %s') % e)
     else:
         if res.status_code == 405:
