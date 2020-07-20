@@ -420,7 +420,7 @@ class Archiver(CkanCommand):
                                 os.rmdir(root)
                                 self.log.info("Unlinked {0}".format(root))
                                 writer.writerow([m.groups(0)[0], archived_path, "Resource not found, file deleted"])
-                            except Exception, e:
+                            except Exception as e:
                                 self.log.error("Failed to unlink {0}: {1}".format(archived_path, e))
                         else:
                             writer.writerow([m.groups(0)[0], archived_path, "Resource not found"])
@@ -533,7 +533,7 @@ class Archiver(CkanCommand):
                 print 'File: "%s" -> "%s"' % (old_path, new_path)
                 try:
                     shutil.move(old_path, new_path)
-                except IOError, e:
+                except IOError as e:
                     print 'ERROR moving resource: %s' % e
                     continue
 
