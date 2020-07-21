@@ -639,7 +639,7 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
                                      "/dataset/{0}/resource/{1}/archive/{2}".format(
                                          resource['package_id'], resource['id'], file_name))
         responsePayload = {
-            'cache_filepath': cache_url,
+            'cache_filepath': os.path.join(save_file_folder, file_name),
             'cache_url': cache_url
         }
         logging.debug(

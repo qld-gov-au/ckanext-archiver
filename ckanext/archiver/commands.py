@@ -17,6 +17,7 @@ from sqlalchemy.sql import func
 
 from ckan.lib.cli import CkanCommand
 
+toolkit = p.toolkit
 REQUESTS_HEADER = {'content-type': 'application/json'}
 
 
@@ -636,17 +637,21 @@ class Archiver(CkanCommand):
                 model.Session.flush()
                 continue
             filepath = archival.cache_filepath
-            if not filepath.startswith('http') and not os.path.exists(filepath):
-                print 'Skipping - file not on disk'
-                continue
             try:
-                if filepath.startswith('http'):
-                    # Uploader system used
-                    relative_archive_path = os.path.join('archive', archival['resource_id'][:2],
-                                                         resource['resource_id'])
-                    filename = os.path.basename(filepath)
+                if not os.path.exists(filepath):
+                    get_action = toolkit.get_action
 
-                    upload = uploader.get_uploader(relative_archive_path)
+                    # Uploader system used ensure we only delete url uploads as local is usually not cached
+                    context_ = {'model': model, 'ignore_auth': True, 'session': model.Session}
+                    resource = get_action('resource_show')(context_, {'id': archival.package_id})
+                    if resource.get('url_type') == 'upload':
+                        upload = uploader.get_resource_uploader(resource)
+                        resource_filepath = upload.get_path(resource['id'])
+                        if resource_filepath == filepath:
+                            # not deleting resource
+                            continue
+                    folder_path, filename = os.path.split(filepath)
+                    upload = uploader.get_uploader(folder_path)
                     upload.delete(filename)
                 else:
                     os.unlink(filepath)
