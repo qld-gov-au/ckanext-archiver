@@ -6,6 +6,7 @@ import re
 import shutil
 import itertools
 import ckan.plugins as p
+from ckan.lib import uploader
 
 from pylons import config
 try:
@@ -36,7 +37,7 @@ class Archiver(CkanCommand):
              package or group, if specified
 
         paster archiver update-test [{package-name/id}|{group-name/id}]
-           - Does an archive in the current process i.e. avoiding Celery queue
+           - Does an archive in the current process i.e. avoiding worker queue
              so that you can test on the command-line more easily.
 
         paster archiver clean-status
@@ -62,6 +63,8 @@ class Archiver(CkanCommand):
            - Deletes orphans that are files on disk with no corresponding
              resource. This uses the report command and will write out a
              report to [outputfile]
+             Does not cleanup IUploader plugin uploaded files as they may not be
+             on disk.
 
         paster archiver migrate-archive-dirs
            - Migrate the layout of the archived resource directories.
@@ -402,6 +405,7 @@ class Archiver(CkanCommand):
 
             # Iterate over the archive root and check each file by matching the
             # resource_id part of the path to the resources dict
+            # Cannot tree walk Uploader files since it could be in external blob store.
             for root, _, files in os.walk(archive_root):
                 for filename in files:
                     archived_path = os.path.join(root, filename)
@@ -632,11 +636,20 @@ class Archiver(CkanCommand):
                 model.Session.flush()
                 continue
             filepath = archival.cache_filepath
-            if not os.path.exists(filepath):
+            if not filepath.startswith('http') and not os.path.exists(filepath):
                 print 'Skipping - file not on disk'
                 continue
             try:
-                os.unlink(filepath)
+                if filepath.startswith('http'):
+                    # Uploader system used
+                    relative_archive_path = os.path.join('archive', archival['resource_id'][:2],
+                                                         resource['resource_id'])
+                    filename = os.path.basename(filepath)
+
+                    upload = uploader.get_uploader(relative_archive_path)
+                    upload.delete(filename)
+                else:
+                    os.unlink(filepath)
             except OSError:
                 print 'ERROR deleting %s' % filepath.decode('utf8')
             else:
