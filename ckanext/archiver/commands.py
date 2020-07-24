@@ -6,6 +6,7 @@ import re
 import shutil
 import itertools
 import ckan.plugins as p
+from ckan.lib import uploader
 
 from pylons import config
 try:
@@ -16,6 +17,7 @@ from sqlalchemy.sql import func
 
 from ckan.lib.cli import CkanCommand
 
+toolkit = p.toolkit
 REQUESTS_HEADER = {'content-type': 'application/json'}
 
 
@@ -36,7 +38,7 @@ class Archiver(CkanCommand):
              package or group, if specified
 
         paster archiver update-test [{package-name/id}|{group-name/id}]
-           - Does an archive in the current process i.e. avoiding Celery queue
+           - Does an archive in the current process i.e. avoiding worker queue
              so that you can test on the command-line more easily.
 
         paster archiver clean-status
@@ -62,6 +64,8 @@ class Archiver(CkanCommand):
            - Deletes orphans that are files on disk with no corresponding
              resource. This uses the report command and will write out a
              report to [outputfile]
+             Does not cleanup IUploader plugin uploaded files as they may not be
+             on disk.
 
         paster archiver migrate-archive-dirs
            - Migrate the layout of the archived resource directories.
@@ -402,6 +406,7 @@ class Archiver(CkanCommand):
 
             # Iterate over the archive root and check each file by matching the
             # resource_id part of the path to the resources dict
+            # Cannot tree walk Uploader files since it could be in external blob store.
             for root, _, files in os.walk(archive_root):
                 for filename in files:
                     archived_path = os.path.join(root, filename)
@@ -420,7 +425,7 @@ class Archiver(CkanCommand):
                                 os.rmdir(root)
                                 self.log.info("Unlinked {0}".format(root))
                                 writer.writerow([m.groups(0)[0], archived_path, "Resource not found, file deleted"])
-                            except Exception, e:
+                            except Exception as e:
                                 self.log.error("Failed to unlink {0}: {1}".format(archived_path, e))
                         else:
                             writer.writerow([m.groups(0)[0], archived_path, "Resource not found"])
@@ -533,7 +538,7 @@ class Archiver(CkanCommand):
                 print 'File: "%s" -> "%s"' % (old_path, new_path)
                 try:
                     shutil.move(old_path, new_path)
-                except IOError, e:
+                except IOError as e:
                     print 'ERROR moving resource: %s' % e
                     continue
 
@@ -632,11 +637,24 @@ class Archiver(CkanCommand):
                 model.Session.flush()
                 continue
             filepath = archival.cache_filepath
-            if not os.path.exists(filepath):
-                print 'Skipping - file not on disk'
-                continue
             try:
-                os.unlink(filepath)
+                if not os.path.exists(filepath):
+                    get_action = toolkit.get_action
+
+                    # Uploader system used ensure we only delete url uploads as local is usually not cached
+                    context_ = {'model': model, 'ignore_auth': True, 'session': model.Session}
+                    resource = get_action('resource_show')(context_, {'id': archival.package_id})
+                    if resource.get('url_type') == 'upload':
+                        upload = uploader.get_resource_uploader(resource)
+                        resource_filepath = upload.get_path(resource['id'])
+                        if resource_filepath == filepath:
+                            # not deleting resource
+                            continue
+                    folder_path, filename = os.path.split(filepath)
+                    upload = uploader.get_uploader(folder_path)
+                    upload.delete(filename)
+                else:
+                    os.unlink(filepath)
             except OSError:
                 print 'ERROR deleting %s' % filepath.decode('utf8')
             else:

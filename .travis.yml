@@ -1,15 +1,19 @@
+os: linux
 language: python
+dist: bionic
 python:
     - "2.7"
 env:
-    - CKANVERSION=master
-    - CKANVERSION=2.6
-    - CKANVERSION=2.7
-    - CKANVERSION=2.8
+#    - CKANVERSION=master
+#    - CKANVERSION=2.6
+#    - CKANVERSION=2.7
+    -  CKAN_GIT_REPO=ckan/ckan CKANVERSION=2.8
+    -  CKAN_GIT_REPO=qld-gov-au/ckan CKAN_BRANCH=qgov-master
 services:
     - redis-server
     - postgresql
 install:
+    - pip install -U pip wheel
     - bash bin/travis-build.bash
     - pip install coveralls
 script: sh bin/travis-run.sh
@@ -17,8 +21,8 @@ after_success:
     - coveralls
 
 # the new trusty images of Travis cause build errors with psycopg2, see https://github.com/travis-ci/travis-ci/issues/8897
-dist: trusty
-group: deprecated-2017Q4
+#dist: trusty
+#group: deprecated-2017Q4
 
 stages:
   - Flake8
@@ -27,8 +31,9 @@ stages:
 jobs:
   include:
     - stage: Flake8
-      env: FLAKE8=True
+      env: FLAKE8=True CKAN_GIT_REPO=ckan/ckan CKANVERSION=2.8
       install:
+        - pip install -U pip wheel
         - bash bin/travis-build.bash
         - pip install flake8==3.5.0
         - pip install pycodestyle==2.3.0
@@ -38,3 +43,5 @@ jobs:
         - flake8 . --count --select=E901,E999,F821,F822,F823 --show-source --statistics --exclude ckan
         # exit-zero treats all errors as warnings.  The GitHub editor is 127 chars wide
         - flake8 . --count --max-line-length=127 --statistics --exclude ckan
+
+cache: pip

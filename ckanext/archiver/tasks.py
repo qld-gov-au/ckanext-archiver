@@ -19,10 +19,14 @@ from requests.packages import urllib3
 from ckan.common import _
 from ckan.lib import uploader
 from ckan import plugins as p
+from ckan.lib.uploader import ResourceUpload as DefaultResourceUpload
 from ckanext.archiver import interfaces as archiver_interfaces
+from ckanext.archiver import default_settings as settings
+import ckantoolkit as toolkit
 
 import logging
 
+config = toolkit.config
 log = logging.getLogger(__name__)
 
 toolkit = p.toolkit
@@ -30,6 +34,9 @@ toolkit = p.toolkit
 ALLOWED_SCHEMES = set(('http', 'https', 'ftp'))
 
 USER_AGENT = 'ckanext-archiver'
+
+# New version now encapsulates downloading via stream or redirect link.
+uploaderHasDownloadEnabled = hasattr(DefaultResourceUpload, "download")
 
 # CKAN 2.7 introduces new jobs system
 if p.toolkit.check_ckan_version(max_version='2.6.99'):
@@ -153,7 +160,7 @@ def update_resource(ckan_ini_filepath, resource_id, queue='bulk'):
     try:
         result = _update_resource(ckan_ini_filepath, resource_id, queue, log)
         return result
-    except Exception, e:
+    except Exception as e:
         if os.environ.get('DEBUG'):
             raise
         # Any problem at all is logged and reraised so that celery can log it too
@@ -177,7 +184,7 @@ def update_package(ckan_ini_filepath, package_id, queue='bulk'):
     # celery's task status.
     try:
         _update_package(ckan_ini_filepath, package_id, queue, log)
-    except Exception, e:
+    except Exception as e:
         if os.environ.get('DEBUG'):
             raise
         # Any problem at all is logged and reraised so that celery can log it
@@ -258,7 +265,6 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
     from ckan import model
     from pylons import config
     from ckan.plugins import toolkit
-    from ckanext.archiver import default_settings as settings
     from ckanext.archiver.model import Status, Archival
 
     get_action = toolkit.get_action
@@ -298,20 +304,28 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
         hosted_externally = not url.startswith(config['ckan.site_url']) or urlparse.urlparse(filepath).scheme is not ''
         # if resource.get('resource_type') == 'file.upload' and not hosted_externally:
         if not hosted_externally:
-            log.info("Won't attemp to archive resource uploaded locally: %s" % resource['url'])
+            log.info("Won't attempt to archive resource uploaded locally: %s", resource['url'])
 
             try:
-                hash, length = _file_hashnlength(filepath)
-            except IOError, e:
-                log.error('Error while accessing local resource %s: %s', filepath, e)
+                if hasattr(upload, 'metadata'):
+                    file_metadata = upload.metadata(resource['id'])
+                    hash = file_metadata['hash']
+                    length = file_metadata['size']
+                    content_type = file_metadata['content_type']
+                else:
+                    # if the uploader can't provide metadata,
+                    # we just have to assume it's a local file.
+                    hash, length = _file_hashnlength(filepath)
+                    content_type, content_encoding = mimetypes.guess_type(url)
+            except IOError as e:
+                log.error('Error while accessing uploaded resource %s: %s', filepath, e)
 
                 download_status_id = Status.by_text('URL request failed')
                 _save(download_status_id, e, resource)
                 return
 
             mimetype = None
-            headers = None
-            content_type, content_encoding = mimetypes.guess_type(url)
+            headers = {}
             if content_type:
                 mimetype = _clean_content_type(content_type)
                 headers = {'Content-Type': content_type}
@@ -345,23 +359,23 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
         }
     try:
         download_result = download(context, resource)
-    except NotChanged, e:
+    except NotChanged as e:
         download_status_id = Status.by_text('Content has not changed')
         try_as_api = False
         requires_archive = False
-    except LinkInvalidError, e:
+    except LinkInvalidError as e:
         download_status_id = Status.by_text('URL invalid')
         try_as_api = False
-    except DownloadException, e:
+    except DownloadException as e:
         download_status_id = Status.by_text('Download error')
         try_as_api = True
-    except DownloadError, e:
+    except DownloadError as e:
         download_status_id = Status.by_text('Download error')
         try_as_api = True
-    except ChooseNotToDownload, e:
+    except ChooseNotToDownload as e:
         download_status_id = Status.by_text('Chose not to download')
         try_as_api = False
-    except Exception, e:
+    except Exception as e:
         if os.environ.get('DEBUG'):
             raise
         log.error('Uncaught download failure: %r, %r', e, e.args)
@@ -393,7 +407,7 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
     log.info('Attempting to archive resource')
     try:
         archive_result = archive_resource(context, resource, log, download_result)
-    except ArchiveError, e:
+    except ArchiveError as e:
         log.error('System error during archival: %r, %r', e, e.args)
         _save(Status.by_text('System error during archival'), e, resource, download_result['url_redirected_to'])
         return
@@ -528,7 +542,7 @@ def download(context, resource, url_timeout=30,
     log.info('Saving resource')
     try:
         length, hash, saved_file_path = _save_resource(resource, res, max_content_length)
-    except ChooseNotToDownload, e:
+    except ChooseNotToDownload as e:
         raise ChooseNotToDownload(str(e), url_redirected_to)
     log.info('Resource saved. Length: %s File: %s', length, saved_file_path)
 
@@ -580,11 +594,20 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
 
     Returns: {cache_filepath, cache_url}
     """
-    from ckanext.archiver import default_settings as settings
+
+    # Return the key used for this resource in S3.
+    #
+    # Keys are in the form:
+    # <uploaderpath>/<upload_to>/<2 char from resource id >/<resource id>/<filename>
+    #
+    # e.g.:
+    # my_storage_path/archive/16/165900ba-3c60-43c5-9e9c-9f8acd0aa93f/data.csv
     relative_archive_path = os.path.join(resource['id'][:2], resource['id'])
-    archive_dir = os.path.join(settings.ARCHIVE_DIR, relative_archive_path)
-    if not os.path.exists(archive_dir):
-        os.makedirs(archive_dir)
+    if not uploaderHasDownloadEnabled:
+        from ckanext.archiver import default_settings as settings
+        archive_dir = os.path.join(settings.ARCHIVE_DIR, relative_archive_path)
+        if not os.path.exists(archive_dir):
+            os.makedirs(archive_dir)
     # try to get a file name from the url
     parsed_url = urlparse.urlparse(resource.get('url'))
     try:
@@ -594,26 +617,56 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
     except Exception:
         file_name = "resource"
 
-    # move the temp file to the resource's archival directory
-    saved_file = os.path.join(archive_dir, file_name)
-    shutil.move(result['saved_file'], saved_file)
-    log.info('Going to do chmod: %s', saved_file)
-    try:
-        os.chmod(saved_file, 0644)  # allow other users to read it
-    except Exception, e:
-        log.error('chmod failed %s: %s', saved_file, e)
-        raise
-    log.info('Archived resource as: %s', saved_file)
+    if uploaderHasDownloadEnabled:
+        # Get an uploader, set the fields required to upload and upload up.
+        save_file_folder = os.path.join('archive', relative_archive_path)
 
-    # calculate the cache_url
-    if not context.get('cache_url_root'):
-        log.warning('Not saved cache_url because no value for '
-                    'ckanext-archiver.cache_url_root in config')
-        raise ArchiveError(_('No value for ckanext-archiver.cache_url_root in config'))
-    cache_url = urlparse.urljoin(context['cache_url_root'],
-                                 '%s/%s' % (relative_archive_path, file_name))
-    return {'cache_filepath': saved_file,
-            'cache_url': cache_url}
+        from werkzeug.datastructures import FileStorage as FlaskFileStorage
+        # we use the Upload class to push to our preferred filestorage solution
+        toUpload = {"fileStorage": FlaskFileStorage(
+            filename=file_name, stream=open(result['saved_file']), content_type=result['mimetype']),
+            "preserve_filename": True}
+        upload = uploader.get_uploader(save_file_folder)
+        upload.update_data_dict(toUpload, 'url_field', 'fileStorage', 'clear_field')
+        upload.upload(result['size'])
+        # delete temp file now that its in real location
+        try:
+            os.remove(result['saved_file'])
+        except OSError:
+            pass
+
+        cache_url = urlparse.urljoin(config.get('ckan.site_url', ''),
+                                     "/dataset/{0}/resource/{1}/archive/{2}".format(
+                                         resource['package_id'], resource['id'], file_name))
+        responsePayload = {
+            'cache_filepath': os.path.join(save_file_folder, file_name),
+            'cache_url': cache_url
+        }
+        logging.debug(
+            'file uploaded via Uploader to folder: %s, with filename: %s, responsePayload: %s', save_file_folder,
+            file_name, responsePayload)
+        return responsePayload
+    else:
+        # move the temp file to the resource's archival directory
+        saved_file = os.path.join(archive_dir, file_name)
+        shutil.move(result['saved_file'], saved_file)
+        log.info('Going to do chmod: %s', saved_file)
+        try:
+            os.chmod(saved_file, 0644)  # allow other users to read it
+        except Exception as e:
+            log.error('chmod failed %s: %s', saved_file, e)
+            raise
+        log.info('Archived resource as: %s', saved_file)
+
+        # calculate the cache_url
+        if not context.get('cache_url_root'):
+            log.warning('Not saved cache_url because no value for '
+                        'ckanext-archiver.cache_url_root in config')
+            raise ArchiveError(_('No value for ckanext-archiver.cache_url_root in config'))
+        cache_url = urlparse.urljoin(context['cache_url_root'],
+                                     '%s/%s' % (relative_archive_path, file_name))
+        return {'cache_filepath': saved_file,
+                'cache_url': cache_url}
 
 
 def notify_resource(resource, queue, cache_filepath):
@@ -661,7 +714,7 @@ def _set_user_agent_string(headers):
     Update the passed headers object with a `User-Agent` key, if there is a
     USER_AGENT_STRING option in settings.
     '''
-    from ckanext.archiver import default_settings as settings
+
     ua_str = settings.USER_AGENT_STRING
     if ua_str is not None:
         headers['User-Agent'] = ua_str
@@ -696,7 +749,7 @@ def tidy_url(url):
     # caught well
     try:
         parsed_url = urllib3.util.parse_url(url)
-    except urllib3.exceptions.LocationParseError, e:
+    except urllib3.exceptions.LocationParseError as e:
         raise LinkInvalidError(_('URL parsing failure: %s') % e)
 
     # Check we aren't using any schemes we shouldn't be.
@@ -823,7 +876,7 @@ def requests_wrapper(log, func, *args, **kwargs):
     try:
         try:
             response = func(*args, **kwargs)
-        except requests.exceptions.ConnectionError, e:
+        except requests.exceptions.ConnectionError as e:
             if 'SSL23_GET_SERVER_HELLO' not in str(e):
                 raise
             log.info('SSLv23 failed so trying again using SSLv3: %r', args)
@@ -833,17 +886,17 @@ def requests_wrapper(log, func, *args, **kwargs):
                     requests.post: requests_session.post}[func]
             response = func(*args, **kwargs)
 
-    except requests.exceptions.ConnectionError, e:
+    except requests.exceptions.ConnectionError as e:
         raise DownloadException(_('Connection error: %s') % e)
-    except requests.exceptions.HTTPError, e:
+    except requests.exceptions.HTTPError as e:
         raise DownloadException(_('Invalid HTTP response: %s') % e)
-    except requests.exceptions.Timeout, e:
+    except requests.exceptions.Timeout as e:
         raise DownloadException(_('Connection timed out after %ss') % kwargs.get('timeout', '?'))
-    except requests.exceptions.TooManyRedirects, e:
+    except requests.exceptions.TooManyRedirects as e:
         raise DownloadException(_('Too many redirects'))
-    except requests.exceptions.RequestException, e:
+    except requests.exceptions.RequestException as e:
         raise DownloadException(_('Error downloading: %s') % e)
-    except Exception, e:
+    except Exception as e:
         if os.environ.get('DEBUG'):
             raise
         raise DownloadException(_('Error with the download: %s') % e)
@@ -897,11 +950,11 @@ def api_request(context, resource):
         resource_copy = copy.deepcopy(resource)
         try:
             download_dict = api_request_func(context, resource_copy)
-        except ArchiverError, e:
+        except ArchiverError as e:
             log.info('API %s error: %r, %r "%s"', api_request_func,
                      e, e.args, resource.get('url'))
             continue
-        except Exception, e:
+        except Exception as e:
             if os.environ.get('DEBUG'):
                 raise
             log.error('Uncaught API %s failure: %r, %r', api_request_func,
@@ -974,25 +1027,25 @@ def link_checker(context, data):
     try:
         res = requests.head(url, timeout=url_timeout)
         headers = res.headers
-    except httplib.InvalidURL, ve:
+    except httplib.InvalidURL as ve:
         log.error("Could not make a head request to %r, error is: %s."
                   " Package is: %r. This sometimes happens when using an old version of requests on a URL"
                   " which issues a 301 redirect. Version=%s", url, ve, data.get('package'), requests.__version__)
         raise LinkHeadRequestError(_("Invalid URL or Redirect Link"))
-    except ValueError, ve:
+    except ValueError as ve:
         log.error("Could not make a head request to %r, error is: %s. Package is: %r.", url, ve, data.get('package'))
         raise LinkHeadRequestError(_("Could not make HEAD request"))
-    except requests.exceptions.ConnectionError, e:
+    except requests.exceptions.ConnectionError as e:
         raise LinkHeadRequestError(_('Connection error: %s') % e)
-    except requests.exceptions.HTTPError, e:
+    except requests.exceptions.HTTPError as e:
         raise LinkHeadRequestError(_('Invalid HTTP response: %s') % e)
-    except requests.exceptions.Timeout, e:
+    except requests.exceptions.Timeout as e:
         raise LinkHeadRequestError(_('Connection timed out after %ss') % url_timeout)
-    except requests.exceptions.TooManyRedirects, e:
+    except requests.exceptions.TooManyRedirects as e:
         raise LinkHeadRequestError(_('Too many redirects'))
-    except requests.exceptions.RequestException, e:
+    except requests.exceptions.RequestException as e:
         raise LinkHeadRequestError(_('Error during request: %s') % e)
-    except Exception, e:
+    except Exception as e:
         raise LinkHeadRequestError(_('Error with the request: %s') % e)
     else:
         if res.status_code == 405:

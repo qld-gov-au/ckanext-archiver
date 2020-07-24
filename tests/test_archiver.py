@@ -15,11 +15,12 @@ from ckan import model
 from ckan import plugins
 from ckan.logic import get_action
 try:
-    from ckan.tests.helpers import reset_db
+    from ckan.tests import helpers as ckan_helpers
     from ckan.tests import factories as ckan_factories
     from ckan.tests.legacy import BaseCase
+
 except ImportError:
-    from ckan.new_tests.helpers import reset_db
+    from ckan.tests import helpers as ckan_helpers
     from ckan.new_tests import factories as ckan_factories
     from ckan.tests import BaseCase
 
@@ -72,7 +73,7 @@ class TestLinkChecker(BaseCase):
 
     @classmethod
     def setup_class(cls):
-        reset_db()
+        ckan_helpers.reset_db()
         plugins.unload_all()
         cls._saved_plugins_config = config.get('ckan.plugins', '')
         config['ckan.plugins'] = 'archiver'
@@ -177,7 +178,7 @@ class TestArchiver(BaseCase):
 
     @classmethod
     def setup_class(cls):
-        reset_db()
+        ckan_helpers.reset_db()
         archiver_model.init_tables(model.meta.engine)
 
         cls.temp_dir = tempfile.mkdtemp()
@@ -239,14 +240,24 @@ class TestArchiver(BaseCase):
         result = json.loads(update_resource(self.config, res_id))
 
         assert result['cache_filepath']
-        assert os.path.exists(result['cache_filepath'])
 
-        with open(result['cache_filepath']) as f:
-            content = f.readlines()
-            assert len(content) == 1
-            assert content[0] == "test"
+        from ckan.lib.uploader import ResourceUpload as DefaultResourceUpload
+        if not hasattr(DefaultResourceUpload, "download"):
+            assert os.path.exists(result['cache_filepath'])
+            with open(result['cache_filepath']) as f:
+                content = f.readlines()
+                assert len(content) == 1
+                assert content[0] == "test"
 
-        _remove_archived_file(result.get('cache_filepath'))
+            _remove_archived_file(result.get('cache_filepath'))
+        else:
+            # Used uploader location instead
+            file = os.path.join('/tmp/storage/storage/uploads', result.get('cache_filepath'))
+            with open(os.path.join(file)) as f:
+                content = f.readlines()
+                assert len(content) == 1
+                assert content[0] == "test"
+            _remove_archived_file(file)
 
     @with_mock_url('?content-type=application/foo&content=test')
     def test_update_url_with_unknown_content_type(self, url):
@@ -261,10 +272,21 @@ class TestArchiver(BaseCase):
             result = json.loads(update_resource(self.config, res_id))
             assert result, result
             assert result['request_type'] == 'WMS 1.3'
-        with open(result['cache_filepath']) as f:
-            content = f.read()
-            assert '<WMT_MS_Capabilities' in content, content[:1000]
-        _remove_archived_file(result.get('cache_filepath'))
+        from ckan.lib.uploader import ResourceUpload as DefaultResourceUpload
+        if not hasattr(DefaultResourceUpload, "download"):
+            with open(result['cache_filepath']) as f:
+                content = f.read()
+                assert '<WMT_MS_Capabilities' in content, content[:1000]
+            _remove_archived_file(result.get('cache_filepath'))
+        else:
+            # Used uploader location instead
+            file = os.path.join('/tmp/storage/storage/uploads', result['cache_filepath'])
+            assert os.path.exists(file)
+            with open(file) as f:
+                content = f.read()
+                assert '<WMT_MS_Capabilities' in content, content[:1000]
+
+            _remove_archived_file(file)
 
     @with_mock_url('?status=200&content-type=csv')
     def test_update_with_zero_length(self, url):
@@ -392,7 +414,7 @@ class TestDownload(BaseCase):
     '''
     @classmethod
     def setup_class(cls):
-        reset_db()
+        ckan_helpers.reset_db()
         config
         cls.fake_context = {
             'site_url': config.get('ckan.site_url_internally') or config['ckan.site_url'],

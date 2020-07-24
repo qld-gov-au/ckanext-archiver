@@ -1,3 +1,8 @@
 celery==3.1.25
 kombu==3.0.37
 progressbar==2.3
+SQLAlchemy>=0.6.6
+requests>=1.1.0
+ckantoolkit>=0.0.4
+
+-e git+https://github.com/qld-gov-au/ckanext-report.git@0.1#egg=ckanext-report
