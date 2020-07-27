@@ -144,7 +144,7 @@ This is only necessary if you update ckanext-archiver and already have the datab
 Installing a Celery queue backend
 ---------------------------------
 
-Archiver uses ckan job's to manage its 'queues'. You need to install a queue back-end, such as Redis or RabbitMQ.
+Archiver uses ckan jobs to manage its 'queues'. You need to install a queue back-end, such as Redis or RabbitMQ.
 
 Redis backend
 -------------
