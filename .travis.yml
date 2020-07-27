@@ -35,7 +35,7 @@ jobs:
         - sh bin/travis-flake.sh
       script:
         -  sh bin/travis-flake-run.sh
-    - stage: master python3
+    - stage: test
       env: CKAN_GIT_REPO=ckan/ckan ARCHIVER_GIT_REPO=ckan ARCHIVER_BRANCH=master REPORT_GIT_REPO=datagovuk REPORT_BRANCH=master
       python: "3.6"
   allow_failures:
