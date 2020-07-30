@@ -35,6 +35,7 @@ print package_stats.report()
 import copy
 import datetime
 
+
 class StatsCount(dict):
     # {category:count}
     _init_value = 0
