@@ -1,6 +1,7 @@
 import os
 import hashlib
 import httplib
+import pytz
 import requests
 import json
 import urllib
@@ -802,7 +803,7 @@ def save_archival(resource, status_id, reason, url_redirected_to,
 
     May propagate a CkanError.
     '''
-    now = datetime.datetime.now()
+    now = datetime.datetime.now(pytz.utc)
 
     from ckanext.archiver.model import Archival, Status
     from ckan import model
