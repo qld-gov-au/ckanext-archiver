@@ -1,7 +1,6 @@
 import uuid
 from datetime import datetime
 
-import pytz
 from sqlalchemy import Column, MetaData
 from sqlalchemy import types
 from sqlalchemy.ext.declarative import declarative_base
@@ -117,7 +116,7 @@ class Archival(Base):
     last_success = Column(types.DateTime)
     failure_count = Column(types.Integer, default=0)
 
-    created = Column(types.DateTime, default=datetime.now(pytz.utc))
+    created = Column(types.DateTime, default=datetime.utcnow)
     updated = Column(types.DateTime)
 
     def __repr__(self):
