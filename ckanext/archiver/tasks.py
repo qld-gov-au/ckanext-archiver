@@ -802,7 +802,7 @@ def save_archival(resource, status_id, reason, url_redirected_to,
 
     May propagate a CkanError.
     '''
-    now = datetime.datetime.now()
+    now = datetime.datetime.utcnow()
 
     from ckanext.archiver.model import Archival, Status
     from ckan import model
