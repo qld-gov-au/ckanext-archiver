@@ -164,7 +164,7 @@ class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
         return {
             'archiver_resource_show': action.archiver_resource_show,
             'archiver_dataset_show': action.archiver_dataset_show,
-            }
+        }
 
     # IAuthFunctions
 
@@ -172,7 +172,7 @@ class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
         return {
             'archiver_resource_show': auth.archiver_resource_show,
             'archiver_dataset_show': auth.archiver_dataset_show,
-            }
+        }
 
     # ITemplateHelpers
 
