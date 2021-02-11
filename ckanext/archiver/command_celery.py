@@ -46,7 +46,7 @@ class CeleryCmd(CkanCommand):
         Parse command line arguments and call appropriate method.
         """
         if not self.args or self.args[0] in ['--help', '-h', 'help']:
-            print self.usage
+            print(self.usage)
             sys.exit(1)
 
         cmd = self.args[0]
@@ -71,7 +71,7 @@ class CeleryCmd(CkanCommand):
                       concurrency=int(self.options.concurrency),
                       hostname=self.options.hostname)
         else:
-            print 'Command %s not recognized' % cmd
+            print('Command %s not recognized' % cmd)
             sys.exit(1)
 
     def run_(self, loglevel='INFO', queue=None, concurrency=None,
@@ -83,7 +83,7 @@ class CeleryCmd(CkanCommand):
         elif os.path.isfile(default_ini):
             os.environ['CKAN_CONFIG'] = default_ini
         else:
-            print 'No .ini specified and none was found in current directory'
+            print('No .ini specified and none was found in current directory')
             sys.exit(1)
 
         # from ckan.lib.celery_app import celery
@@ -97,7 +97,7 @@ class CeleryCmd(CkanCommand):
         celery_args.append('--loglevel=%s' % loglevel)
 
         argv = ['celeryd'] + celery_args
-        print 'Running: %s' % ' '.join(argv)
+        print('Running: %s' % ' '.join(argv))
         celery_app = self._celery_app()
         celery_app.worker_main(argv=argv)
 
@@ -120,7 +120,7 @@ class CeleryCmd(CkanCommand):
                 )
             except VersionConflict as e:
                 error = 'ERROR in entry point load: %s %s' % (entry_point, e)
-                print error
+                print(error)
                 pass
 
         LIST_PARAMS = 'CELERY_IMPORTS ADMINS ROUTES'.split()
@@ -130,7 +130,7 @@ class CeleryCmd(CkanCommand):
                     if key in LIST_PARAMS else value
         except ConfigParser.NoSectionError:
             error = 'Could not find celery config in your ckan ini file (a section headed "[app:celery]".'
-            print error
+            print(error)
             sys.exit(1)
 
         celery_app = Celery()

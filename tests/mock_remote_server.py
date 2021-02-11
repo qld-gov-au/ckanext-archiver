@@ -38,7 +38,7 @@ class MockHTTPServer(object):
         This uses context manager to make sure the server is stopped::
 
             >>> with MockTestServer().serve() as addr:
-            ...     print urllib2.urlopen('%s/?content=hello+world').read()
+            ...     print(urllib2.urlopen('%s/?content=hello+world').read())
             ...
             'hello world'
         """

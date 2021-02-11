@@ -111,10 +111,10 @@ def migrate(options):
                 model.Session.add(archival)
             add_stat('Added to archival table', res, stats)
 
-    print 'Summary\n', stats.report()
+    print('Summary\n', stats.report())
     if options.write:
         model.repo.commit_and_remove()
-        print 'Written'
+        print('Written')
 
 
 def add_stat(outcome, res, stats, extra_info=None):
@@ -153,10 +153,10 @@ if __name__ == '__main__':
     if len(args) != 1:
         parser.error('Wrong number of arguments (%i)' % len(args))
     config_ini = args[0]
-    print 'Loading CKAN config...'
+    print('Loading CKAN config...')
     common.load_config(config_ini)
     common.register_translator()
-    print 'Done'
+    print('Done')
     # Setup logging to print debug out for theme stuff only
     rootLogger = logging.getLogger()
     rootLogger.setLevel(logging.WARNING)

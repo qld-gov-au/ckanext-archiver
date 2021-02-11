@@ -11,6 +11,7 @@ import datetime
 import copy
 import mimetypes
 import re
+import six
 import routes
 import time
 
@@ -301,7 +302,7 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
         upload = uploader.get_resource_uploader(resource)
         filepath = upload.get_path(resource['id'])
 
-        hosted_externally = not url.startswith(config['ckan.site_url']) or urlparse.urlparse(filepath).scheme is not ''
+        hosted_externally = not url.startswith(config['ckan.site_url']) or urlparse.urlparse(filepath).scheme != ''
         # if resource.get('resource_type') == 'file.upload' and not hosted_externally:
         if not hosted_externally:
             log.info("Won't attempt to archive resource uploaded locally: %s", resource['url'])
@@ -356,9 +357,10 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
         'site_url': config.get('ckan.site_url_internally') or config['ckan.site_url'],
         'cache_url_root': config.get('ckanext-archiver.cache_url_root'),
         'previous': Archival.get_for_resource(resource_id)
-        }
+    }
     try:
         download_result = download(context, resource)
+        e = {'args': ''}
     except NotChanged as e:
         download_status_id = Status.by_text('Content has not changed')
         try_as_api = False
@@ -453,8 +455,8 @@ def download(context, resource, url_timeout=30,
     url = resource['url']
     url = tidy_url(url)
 
-    if (resource.get('url_type') == 'upload' and
-            not url.startswith('http')):
+    if (resource.get('url_type') == 'upload'
+            and not url.startswith('http')):
         url = context['site_url'].rstrip('/') + url
 
     hosted_externally = not url.startswith(config['ckan.site_url'])
@@ -467,7 +469,7 @@ def download(context, resource, url_timeout=30,
 
         if not config.get('ckanext-archiver.archive_cloud', False):
             raise ChooseNotToDownload('Skipping resource hosted externally to download resource: %s'
-                                      % url,  url)
+                                      % url, url)
 
     headers = _set_user_agent_string({})
 
@@ -511,16 +513,15 @@ def download(context, resource, url_timeout=30,
                     content_length = int(content_length.split(',')[0])
                 except ValueError:
                     pass
-    if isinstance(content_length, int) and \
-       int(content_length) >= max_content_length:
-            # record fact that resource is too large to archive
-            log.warning('Resource too large to download: %s > max (%s). '
-                        'Resource: %s %r', content_length,
-                        max_content_length, resource['id'], url)
-            raise ChooseNotToDownload(_('Content-length %s exceeds maximum '
-                                      'allowed value %s') %
-                                      (content_length, max_content_length),
-                                      url_redirected_to)
+    if isinstance(content_length, int) and int(content_length) >= max_content_length:
+        # record fact that resource is too large to archive
+        log.warning('Resource too large to download: %s > max (%s). '
+                    'Resource: %s %r', content_length,
+                    max_content_length, resource['id'], url)
+        raise ChooseNotToDownload(_('Content-length %s exceeds maximum '
+                                  'allowed value %s') %
+                                  (content_length, max_content_length),
+                                  url_redirected_to)
     # content_length in the headers is useful but can be unreliable, so when we
     # download, we will monitor it doesn't go over the max.
 
@@ -582,7 +583,7 @@ def _file_hashnlength(local_path):
 
             buf = afile.read(BLOCKSIZE)
 
-    return (unicode(hasher.hexdigest()), length)
+    return (six.text_type(hasher.hexdigest()), length)
 
 
 def archive_resource(context, resource, log, result=None, url_timeout=30):
@@ -655,7 +656,7 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
         shutil.move(result['saved_file'], saved_file)
         log.info('Going to do chmod: %s', saved_file)
         try:
-            os.chmod(saved_file, 0644)  # allow other users to read it
+            os.chmod(saved_file, 644)  # allow other users to read it
         except Exception as e:
             log.error('chmod failed %s: %s', saved_file, e)
             raise
@@ -767,7 +768,7 @@ def tidy_url(url):
     return url
 
 
-def _save_resource(resource, response, max_file_size, chunk_size=1024*16):
+def _save_resource(resource, response, max_file_size, chunk_size=1024 * 16):
     """
     Write the response content to disk.
 
@@ -794,7 +795,7 @@ def _save_resource(resource, response, max_file_size, chunk_size=1024*16):
 
     os.close(fd)
 
-    content_hash = unicode(resource_hash.hexdigest())
+    content_hash = six.text_type(resource_hash.hexdigest())
     return length, content_hash, tmp_resource_file_path
 
 

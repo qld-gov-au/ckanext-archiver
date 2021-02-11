@@ -1,3 +1,5 @@
+# encoding: utf-8
+import six
 import uuid
 from datetime import datetime
 
@@ -16,7 +18,7 @@ Base = declarative_base()
 
 
 def make_uuid():
-    return unicode(uuid.uuid4())
+    return six.text_type(uuid.uuid4())
 
 
 metadata = MetaData()
