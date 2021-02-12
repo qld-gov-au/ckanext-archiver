@@ -386,7 +386,7 @@ class Archiver(CkanCommand):
                         not_cached_active += 1
                     else:
                         not_cached_deleted += 1
-                    writer.writerow([resource.id, str(resource.extras), "Resource not cached: {0}".format(resource.state)])
+                    writer.writerow([resource.id, six.text_type(resource.extras), "Resource not cached: {0}".format(resource.state)])
                     continue
 
                 # Check that the cached file is there and readable
