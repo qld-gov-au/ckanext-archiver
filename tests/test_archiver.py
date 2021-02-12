@@ -228,7 +228,7 @@ class TestArchiver(BaseCase):
     @with_mock_url('?status=200&content=test&content-type=csv')
     def test_resource_hash_and_content_length(self, url):
         res_id = self._test_resource(url)['id']
-        result = self._get_update_resource_json(res_id))
+        result = self._get_update_resource_json(res_id)
         assert result['size'] == len('test')
         from hashlib import sha1
         assert result['hash'] == sha1('test').hexdigest(), result
