@@ -211,7 +211,7 @@ class TestArchiver(BaseCase):
         archival = Archival.get_for_resource(resource_id)
         if error_message_fragment not in archival.reason:
             print('ERROR: %s (%s)' % (archival.reason, archival.status))
-            raise AssertionError(archival.reason)
+            raise AssertionError("Expected error containing: {}, but was: {}".format(error_message_fragment, archival.reason))
 
     def test_file_url(self):
         res_id = self._test_resource('file:///home/root/test.txt')['id']  # scheme not allowed
