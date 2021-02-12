@@ -145,7 +145,7 @@ class MockEchoTestServer(MockHTTPServer):
             cl = request.str_params.get('length')
             headers += [('Content-Length', cl)]
         elif content and 'no-content-length' not in request.str_params:
-            headers += [('Content-Length', six.text_type(len(content)))]
+            headers += [('Content-Length', six.binary_type(len(content)))]
         start_response(
             '%d %s' % (status, responses[status]),
             headers

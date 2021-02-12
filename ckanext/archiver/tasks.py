@@ -742,7 +742,7 @@ def tidy_url(url):
         parts[2] = urllib.quote(parts[2].encode('utf-8'))
         parts[1] = urllib.quote(parts[1].encode('utf-8'))
         url = urlparse.urlunparse(parts)
-    url = six.text_type(url)
+    url = six.binary_type(url)
 
     # strip whitespace from url
     # (browsers appear to do this)
