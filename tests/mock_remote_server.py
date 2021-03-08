@@ -7,6 +7,7 @@ from threading import Thread
 from time import sleep
 from wsgiref.simple_server import make_server
 import urllib2
+import six
 import socket
 import os
 
@@ -81,8 +82,8 @@ class MockHTTPServer(object):
         called and its return value used.
         """
         modpath, var = varspec.split(':')
-        mod = reduce(getattr, modpath.split('.')[1:], __import__(modpath))
-        var = reduce(getattr, var.split('.'), mod)
+        mod = six.moves.reduce(getattr, modpath.split('.')[1:], __import__(modpath))
+        var = six.moves.reduce(getattr, var.split('.'), mod)
         try:
             return var()
         except TypeError:
@@ -132,7 +133,7 @@ class MockEchoTestServer(MockHTTPServer):
             content = ''
             status = 405
 
-        if isinstance(content, unicode):
+        if isinstance(content, six.text_type):
             raise TypeError("Expected raw byte string for content")
 
         headers = [
@@ -144,7 +145,7 @@ class MockEchoTestServer(MockHTTPServer):
             cl = request.str_params.get('length')
             headers += [('Content-Length', cl)]
         elif content and 'no-content-length' not in request.str_params:
-            headers += [('Content-Length', str(len(content)))]
+            headers += [('Content-Length', six.binary_type(len(content)))]
         start_response(
             '%d %s' % (status, responses[status]),
             headers

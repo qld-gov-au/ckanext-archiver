@@ -547,7 +547,7 @@ def download(context, resource, url_timeout=30,
     try:
         length, hash, saved_file_path = _save_resource(resource, res, max_content_length)
     except ChooseNotToDownload as e:
-        raise ChooseNotToDownload(str(e), url_redirected_to)
+        raise ChooseNotToDownload(six.text_type(e), url_redirected_to)
     log.info('Resource saved. Length: %s File: %s', length, saved_file_path)
 
     # zero length (or just one byte) indicates a problem
@@ -742,7 +742,7 @@ def tidy_url(url):
         parts[2] = urllib.quote(parts[2].encode('utf-8'))
         parts[1] = urllib.quote(parts[1].encode('utf-8'))
         url = urlparse.urlunparse(parts)
-    url = str(url)
+    url = six.binary_type(url)
 
     # strip whitespace from url
     # (browsers appear to do this)
@@ -881,7 +881,7 @@ def requests_wrapper(log, func, *args, **kwargs):
         try:
             response = func(*args, **kwargs)
         except requests.exceptions.ConnectionError as e:
-            if 'SSL23_GET_SERVER_HELLO' not in str(e):
+            if 'SSL23_GET_SERVER_HELLO' not in six.text_type(e):
                 raise
             log.info('SSLv23 failed so trying again using SSLv3: %r', args)
             requests_session = requests.Session()
