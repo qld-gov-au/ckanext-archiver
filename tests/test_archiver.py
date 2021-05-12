@@ -210,8 +210,8 @@ class TestArchiver(BaseCase):
     def assert_archival_error(self, error_message_fragment, resource_id):
         archival = Archival.get_for_resource(resource_id)
         if error_message_fragment not in archival.reason:
-            print 'ERROR: %s (%s)' % (archival.reason, archival.status)
-            raise AssertionError(archival.reason)
+            print('ERROR: %s (%s)' % (archival.reason, archival.status))
+            raise AssertionError("Expected error containing: {}, but was: {}".format(error_message_fragment, archival.reason))
 
     def test_file_url(self):
         res_id = self._test_resource('file:///home/root/test.txt')['id']  # scheme not allowed
@@ -228,7 +228,7 @@ class TestArchiver(BaseCase):
     @with_mock_url('?status=200&content=test&content-type=csv')
     def test_resource_hash_and_content_length(self, url):
         res_id = self._test_resource(url)['id']
-        result = json.loads(update_resource(self.config, res_id))
+        result = self._get_update_resource_json(res_id)
         assert result['size'] == len('test')
         from hashlib import sha1
         assert result['hash'] == sha1('test').hexdigest(), result
@@ -237,7 +237,7 @@ class TestArchiver(BaseCase):
     @with_mock_url('?status=200&content=test&content-type=csv')
     def test_archived_file(self, url):
         res_id = self._test_resource(url)['id']
-        result = json.loads(update_resource(self.config, res_id))
+        result = self._get_update_resource_json(res_id)
 
         assert result['cache_filepath']
 
@@ -262,14 +262,14 @@ class TestArchiver(BaseCase):
     @with_mock_url('?content-type=application/foo&content=test')
     def test_update_url_with_unknown_content_type(self, url):
         res_id = self._test_resource(url, format='foo')['id']  # format has no effect
-        result = json.loads(update_resource(self.config, res_id))
+        result = self._get_update_resource_json(res_id)
         assert result, result
         assert result['mimetype'] == 'application/foo'  # stored from the header
 
     def test_wms_1_3(self):
         with MockWmsServer(wms_version='1.3').serve() as url:
             res_id = self._test_resource(url)['id']
-            result = json.loads(update_resource(self.config, res_id))
+            result = self._get_update_resource_json(res_id)
             assert result, result
             assert result['request_type'] == 'WMS 1.3'
         from ckan.lib.uploader import ResourceUpload as DefaultResourceUpload
@@ -329,7 +329,7 @@ class TestArchiver(BaseCase):
     @with_mock_url('?status=200&content=content&length=abc&content-type=csv')
     def test_content_length_not_integer(self, url):
         res_id = self._test_resource(url)['id']
-        result = json.loads(update_resource(self.config, res_id))
+        result = self._get_update_resource_json(res_id)
         assert result, result
 
     @with_mock_url('?status=200&content=content&repeat-length&content-type=csv')
@@ -337,7 +337,7 @@ class TestArchiver(BaseCase):
         # listing the Content-Length header twice causes requests to
         # store the value as a comma-separated list
         res_id = self._test_resource(url)['id']
-        result = json.loads(update_resource(self.config, res_id))
+        result = self._get_update_resource_json(res_id)
         assert result, result
 
     @with_mock_url('')
@@ -345,7 +345,7 @@ class TestArchiver(BaseCase):
         redirect_url = url + u'?status=200&content=test&content-type=text/csv'
         url += u'?status=301&location=%s' % quote_plus(redirect_url)
         res_id = self._test_resource(url)['id']
-        result = json.loads(update_resource(self.config, res_id))
+        result = self._get_update_resource_json(res_id)
         assert result
         assert_equal(result['url_redirected_to'], redirect_url)
 
@@ -405,6 +405,11 @@ class TestArchiver(BaseCase):
         assert queue == 'queue1'
         assert params.get('package_id') == pkg['id']
         assert params.get('resource_id') is None
+
+    def _get_update_resource_json(self, id):
+        result = update_resource(self.config, id)
+        assert result, "update_resource returned: " + result
+        return json.loads(result)
 
 
 class TestDownload(BaseCase):
