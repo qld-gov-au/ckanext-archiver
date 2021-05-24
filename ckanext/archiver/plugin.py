@@ -123,7 +123,16 @@ class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
 
         # have any resources' url/format changed?
         for res in package.resources:
-            for key in ('url', 'format'):
+            watched_keys = ['format']
+            # Ignore uploaded resources that aren't being re-uploaded.
+            # Otherwise we'll end up comparing 'example.txt' to
+            # 'http://example.com/dataset/foo/resource/baz/download/example.txt'
+            # and thinking that it's changed.
+            if res.url_type != 'upload' \
+                    or old_resources[res.id]['url_type'] != 'upload' \
+                    or hasattr(res, 'upload'):
+                watched_keys.append('url')
+            for key in watched_keys:
                 old_res_value = old_resources[res.id][key]
                 new_res_value = getattr(res, key)
                 if old_res_value != new_res_value:
