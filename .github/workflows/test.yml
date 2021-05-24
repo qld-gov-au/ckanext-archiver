@@ -2,7 +2,7 @@
 #based on https://raw.githubusercontent.com/ckan/ckanext-scheming/master/.github/workflows/test.yml
 # alternative https://github.com/ckan/ckan/blob/master/contrib/cookiecutter/ckan_extension/%7B%7Bcookiecutter.project%7D%7D/.github/workflows/test.yml
 name: Tests
-on: [push, pull_request]
+on: [push]
 env:
   CKAN_SQLALCHEMY_URL: postgresql://ckan_default:pass@postgres/ckan_test
   CKAN_DATASTORE_WRITE_URL: postgresql://datastore_write:pass@postgres/datastore_test
