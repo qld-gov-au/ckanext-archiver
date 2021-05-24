@@ -199,7 +199,7 @@ class TestArchiver(BaseCase):
     def _test_package(self, url, format=None):
         pkg = {'resources': [
             {'url': url, 'format': format or 'TXT', 'description': 'Test'}
-            ]}
+        ]}
         pkg = ckan_factories.Dataset(**pkg)
         return pkg
 
@@ -437,7 +437,7 @@ class TestDownload(BaseCase):
         context = {'model': model, 'ignore_auth': True, 'session': model.Session, 'user': 'test'}
         pkg = {'name': 'testpkg', 'resources': [
             {'url': url, 'format': format or 'TXT', 'description': 'Test'}
-            ]}
+        ]}
         pkg = get_action('package_create')(context, pkg)
         return pkg['resources'][0]
 
