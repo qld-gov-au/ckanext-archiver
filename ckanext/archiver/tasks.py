@@ -361,17 +361,14 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
     try:
         download_result = download(context, resource)
         e = {'args': ''}
-    except NotChanged as e:
+    except NotChanged:
         download_status_id = Status.by_text('Content has not changed')
         try_as_api = False
         requires_archive = False
     except LinkInvalidError as e:
         download_status_id = Status.by_text('URL invalid')
         try_as_api = False
-    except DownloadException as e:
-        download_status_id = Status.by_text('Download error')
-        try_as_api = True
-    except DownloadError as e:
+    except (DownloadException, DownloadError) as e:
         download_status_id = Status.by_text('Download error')
         try_as_api = True
     except ChooseNotToDownload as e:
@@ -894,9 +891,9 @@ def requests_wrapper(log, func, *args, **kwargs):
         raise DownloadException(_('Connection error: %s') % e)
     except requests.exceptions.HTTPError as e:
         raise DownloadException(_('Invalid HTTP response: %s') % e)
-    except requests.exceptions.Timeout as e:
+    except requests.exceptions.Timeout:
         raise DownloadException(_('Connection timed out after %ss') % kwargs.get('timeout', '?'))
-    except requests.exceptions.TooManyRedirects as e:
+    except requests.exceptions.TooManyRedirects:
         raise DownloadException(_('Too many redirects'))
     except requests.exceptions.RequestException as e:
         raise DownloadException(_('Error downloading: %s') % e)
@@ -1043,9 +1040,9 @@ def link_checker(context, data):
         raise LinkHeadRequestError(_('Connection error: %s') % e)
     except requests.exceptions.HTTPError as e:
         raise LinkHeadRequestError(_('Invalid HTTP response: %s') % e)
-    except requests.exceptions.Timeout as e:
+    except requests.exceptions.Timeout:
         raise LinkHeadRequestError(_('Connection timed out after %ss') % url_timeout)
-    except requests.exceptions.TooManyRedirects as e:
+    except requests.exceptions.TooManyRedirects:
         raise LinkHeadRequestError(_('Too many redirects'))
     except requests.exceptions.RequestException as e:
         raise LinkHeadRequestError(_('Error during request: %s') % e)
