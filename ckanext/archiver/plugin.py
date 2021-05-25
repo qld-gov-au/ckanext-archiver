@@ -126,7 +126,6 @@ class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
             # Otherwise we'll end up comparing 'example.txt' to
             # 'http://example.com/dataset/foo/resource/baz/download/example.txt'
             # and thinking that it's changed.
-            log.debug('Old resources: %s, new resource %s', old_resources, res)
             if res.url_type != 'upload' \
                     or old_resources[res.id]['url_type'] != 'upload':
                 watched_keys.append('url')
