@@ -40,13 +40,18 @@ class TestArchiver(BaseCase):
                 model.repo.commit_and_remove()
 
     def _test_org(self):
-        orgs = model.Session.query(model.Group)\
-            .filter(model.Group.type == 'organization')\
-            .filter(model.Group.name == 'test-archiver').all()
-        if orgs:
-            return orgs[0]
-        else:
-            return ckan_factories.Organization(name='test-archiver')
+        def load_model_org():
+            orgs = model.Session.query(model.Group)\
+                .filter(model.Group.type == 'organization')\
+                .filter(model.Group.name == 'test-archiver').all()
+            if orgs:
+                return orgs[0]
+
+        org = load_model_org()
+        if not org:
+            ckan_factories.Organization(name='test-archiver')
+            org = load_model_org()
+        return org
 
     def _test_package(self, name='test-archiver', url='http://example.com', url_type='link', format=None):
         def load_model_package():
