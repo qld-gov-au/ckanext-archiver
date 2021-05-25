@@ -37,9 +37,7 @@ class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
 
         log.debug('Notified of package event: %s %s', entity.name, operation)
 
-        run_archiver = \
-            self._is_it_sufficient_change_to_run_archiver(entity, operation)
-        if not run_archiver:
+        if not self._is_it_sufficient_change_to_run_archiver(entity, operation):
             return
 
         log.debug('Creating archiver task: %s', entity.name)
@@ -72,7 +70,7 @@ class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
         # I am not confident we can rely on the info about the current
         # revision, because we are still in the 'before_commit' stage. So
         # simply ignore that if it's returned.
-        if rev_list[0][0].id == model.Session.revision.id:
+        if hasattr(model.Session, 'revision') and rev_list[0][0].id == model.Session.revision.id:
             rev_list = rev_list[1:]
         if not rev_list:
             log.warn('No sign of previous revisions - will archive')
@@ -124,13 +122,13 @@ class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
         # have any resources' url/format changed?
         for res in package.resources:
             watched_keys = ['format']
-            # Ignore uploaded resources that aren't being re-uploaded.
+            # Ignore URL changes in uploaded resources.
             # Otherwise we'll end up comparing 'example.txt' to
             # 'http://example.com/dataset/foo/resource/baz/download/example.txt'
             # and thinking that it's changed.
+            log.debug('Old resources: %s, new resource %s', old_resources, res)
             if res.url_type != 'upload' \
-                    or old_resources[res.id]['url_type'] != 'upload' \
-                    or hasattr(res, 'upload'):
+                    or old_resources[res.id]['url_type'] != 'upload':
                 watched_keys.append('url')
             for key in watched_keys:
                 old_res_value = old_resources[res.id][key]

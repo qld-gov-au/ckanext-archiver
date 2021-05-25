@@ -361,7 +361,7 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
     try:
         download_result = download(context, resource)
         e = {'args': ''}
-    except NotChanged:
+    except NotChanged as e:
         download_status_id = Status.by_text('Content has not changed')
         try_as_api = False
         requires_archive = False
