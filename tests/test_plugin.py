@@ -21,7 +21,7 @@ def get_logger():
     return log
 
 
-class TestArchiver(BaseCase):
+class TestPlugin(BaseCase):
     """
     Tests for plugin 'is_it_sufficient_change_to_run_archiver?' logic.
     """
@@ -88,9 +88,6 @@ class TestArchiver(BaseCase):
 
     def test_upload_resource_unchanged(self):
         pkg = self._test_package(name="test-archiver-upload", url_type="upload")
-        if hasattr(pkg, 'resources'):
-            pkg.resources[0].url = pkg.resources[0].url + '-updated'
-        else:
-            pkg['resources'][0]['url'] = pkg['resources'][0]['url'] + '-updated'
+        pkg.resources[0].url = pkg.resources[0].url + '-updated'
         result = plugin.ArchiverPlugin()._is_it_sufficient_change_to_run_archiver(pkg, 'updated')
         assert result is False, "Expected archival to be skipped"
