@@ -10,7 +10,6 @@ import shutil
 import datetime
 import copy
 import mimetypes
-import re
 import six
 import routes
 import time
@@ -270,7 +269,6 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
 
     get_action = toolkit.get_action
 
-    assert is_id(resource_id), resource_id
     context_ = {'model': model, 'ignore_auth': True, 'session': model.Session}
     resource = get_action('resource_show')(context_, {'id': resource_id})
 
@@ -963,12 +961,6 @@ def api_request(context, resource):
             continue
 
         return download_dict
-
-
-def is_id(id_string):
-    '''Tells the client if the string looks like a revision id or not'''
-    reg_ex = '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
-    return bool(re.match(reg_ex, id_string))
 
 
 def response_is_an_api_error(response_body):
