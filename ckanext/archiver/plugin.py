@@ -1,5 +1,6 @@
 import logging
 
+from routes.mapper import SubMapper
 from ckan import model
 from ckan import plugins as p
 
@@ -26,6 +27,7 @@ class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
     p.implements(p.IAuthFunctions)
     p.implements(p.ITemplateHelpers)
     p.implements(p.IPackageController, inherit=True)
+    p.implements(p.IRoutes, inherit=True)
 
     # IDomainObjectModification
 
@@ -35,9 +37,7 @@ class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
 
         log.debug('Notified of package event: %s %s', entity.name, operation)
 
-        run_archiver = \
-            self._is_it_sufficient_change_to_run_archiver(entity, operation)
-        if not run_archiver:
+        if not self._is_it_sufficient_change_to_run_archiver(entity, operation):
             return
 
         log.debug('Creating archiver task: %s', entity.name)
@@ -70,7 +70,7 @@ class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
         # I am not confident we can rely on the info about the current
         # revision, because we are still in the 'before_commit' stage. So
         # simply ignore that if it's returned.
-        if rev_list[0][0].id == model.Session.revision.id:
+        if hasattr(model.Session, 'revision') and rev_list[0][0].id == model.Session.revision.id:
             rev_list = rev_list[1:]
         if not rev_list:
             log.warn('No sign of previous revisions - will archive')
@@ -121,7 +121,15 @@ class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
 
         # have any resources' url/format changed?
         for res in package.resources:
-            for key in ('url', 'format'):
+            watched_keys = ['format']
+            # Ignore URL changes in uploaded resources.
+            # Otherwise we'll end up comparing 'example.txt' to
+            # 'http://example.com/dataset/foo/resource/baz/download/example.txt'
+            # and thinking that it's changed.
+            if res.url_type != 'upload' \
+                    or old_resources[res.id]['url_type'] != 'upload':
+                watched_keys.append('url')
+            for key in watched_keys:
                 old_res_value = old_resources[res.id][key]
                 new_res_value = getattr(res, key)
                 if old_res_value != new_res_value:
@@ -162,7 +170,7 @@ class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
         return {
             'archiver_resource_show': action.archiver_resource_show,
             'archiver_dataset_show': action.archiver_dataset_show,
-            }
+        }
 
     # IAuthFunctions
 
@@ -170,7 +178,7 @@ class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
         return {
             'archiver_resource_show': auth.archiver_resource_show,
             'archiver_dataset_show': auth.archiver_dataset_show,
-            }
+        }
 
     # ITemplateHelpers
 
@@ -204,6 +212,18 @@ class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
                 del archival_dict['package_id']
                 del archival_dict['resource_id']
                 res['archiver'] = archival_dict
+
+    # IRoutes
+    def before_map(self, map):
+        with SubMapper(map, controller='ckanext.archiver.controller:ArchiverController') as m:
+            # Override the resource download links
+            m.connect('archive_download',
+                      '/dataset/{id}/resource/{resource_id}/archive',
+                      action='archive_download')
+            m.connect('archive_download',
+                      '/dataset/{id}/resource/{resource_id}/archive/{filename}',
+                      action='archive_download')
+        return map
 
 
 class TestIPipePlugin(p.SingletonPlugin):

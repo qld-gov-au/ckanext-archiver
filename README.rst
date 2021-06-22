@@ -80,9 +80,7 @@ To install ckanext-archiver:
    config file (by default the config file is located at
    ``/etc/ckan/default/production.ini``).
 
-5. Install a Celery queue backend - see later section.
-
-6. Restart CKAN. For example if you've deployed CKAN with Apache on Ubuntu::
+5. Restart CKAN. For example if you've deployed CKAN with Apache on Ubuntu::
 
      sudo service apache2 reload
 
@@ -146,7 +144,7 @@ This is only necessary if you update ckanext-archiver and already have the datab
 Installing a Celery queue backend
 ---------------------------------
 
-Archiver uses Celery to manage its 'queues'. You need to install a queue back-end, such as Redis or RabbitMQ.
+Archiver uses ckan jobs to manage its 'queues'. You need to install a queue back-end, such as Redis or RabbitMQ.
 
 Redis backend
 -------------
@@ -236,7 +234,7 @@ Config settings
 
     * ``ckan.site_url`` = URL to your CKAN instance
 
-    This is the URL that the archive process (in Celery) will use to access the CKAN API to update it about the cached URLs. If your internal network names your CKAN server differently, then specify this internal name in config option: ``ckan.site_url_internally``
+    This is the URL that the archive process (in Job) will use to access the CKAN API to update it about the cached URLs. If your internal network names your CKAN server differently, then specify this internal name in config option: ``ckan.site_url_internally``
 
 
 3.  Additional Archiver settings
@@ -248,6 +246,7 @@ Config settings
       * ``ckanext-archiver.max_content_length`` = the maximum size (in bytes) of files to archive (default ``50000000`` =50MB)
       * ``ckanext-archiver.user_agent_string`` = identifies the archiver to servers it archives from
       * ``ckanext-archiver.verify_https`` = true/false whether you want to verify https connections and therefore fail if it is specified in the URL but does not verify.
+      * ``ckan.download_proxy`` = URL to a HTTP/S proxy server that will be used to download resources.
 
 4.  Nightly report generation
 
@@ -286,7 +285,7 @@ applies whatever the format.
 Using Archiver
 --------------
 
-First, make sure that Celery is running for each queue. For test/local use, you can run::
+Prior to Ckan 2.7 make sure that Celery is running for each queue. For test/local use, you can run::
 
     paster --plugin=ckanext-archiver celeryd2 run all -c development.ini
 
@@ -298,12 +297,18 @@ However in production you'd run the priority and bulk queues separately, or else
 For production use, we recommend setting up Celery to run with supervisord. `apt-get install supervisor` and use `bin/celery-supervisor.conf` as a configuration template.
 
 If you are running CKAN 2.7 or higher, configure job workers instead http://docs.ckan.org/en/2.8/maintaining/background-tasks.html#using-supervisor
+For production use, we recommend setting up job workers to run with supervisord. `apt-get install supervisor` and use `bin/supervisor-ckan-archiver.conf` as a configuration template. Which would start running these two commands::
+
+    paster --plugin=ckan jobs worker priority -c production.ini
+    paster --plugin=ckan jobs worker bulk -c production.ini
 
 An archival can be triggered by adding a dataset with a resource or updating a resource URL. Alternatively you can run::
 
     paster --plugin=ckanext-archiver archiver update [dataset] --queue=priority -c <path to CKAN config>
 
-Here ``dataset`` is a CKAN dataset name or ID, or you can omit it to archive all datasets.
+Here ``dataset`` is a CKAN dataset name or ID, or you can omit it to archive all datasets. i.e. ::
+
+    paster --plugin=ckanext-archiver archiver update -c <path to CKAN config>
 
 For a full list of manual commands run::
 

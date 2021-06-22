@@ -1,5 +1,6 @@
 import os
 import logging
+import six
 import ckan.plugins as p
 
 from ckanext.archiver.tasks import update_package, update_resource
@@ -19,7 +20,7 @@ def compat_enqueue(name, fn, queue, args=None):
         # Fallback to Celery
         import uuid
         from ckan.lib.celery_app import celery
-        celery.send_task(name, args=args + [queue], task_id=str(uuid.uuid4()))
+        celery.send_task(name, args=args + [queue], task_id=six.text_type(uuid.uuid4()))
 
 
 def create_archiver_resource_task(resource, queue):
@@ -33,7 +34,7 @@ def create_archiver_resource_task(resource, queue):
 
     compat_enqueue('archiver.update_resource', update_resource, queue, [ckan_ini_filepath, resource.id])
 
-    log.debug('Archival of resource put into celery queue %s: %s/%s url=%r',
+    log.debug('Archival of resource put into queue %s: %s/%s url=%r',
               queue, package.name, resource.id, resource.url)
 
 
@@ -43,7 +44,7 @@ def create_archiver_package_task(package, queue):
 
     compat_enqueue('archiver.update_package', update_package, queue, [ckan_ini_filepath, package.id])
 
-    log.debug('Archival of package put into celery queue %s: %s',
+    log.debug('Archival of package put into queue %s: %s',
               queue, package.name)
 
 
