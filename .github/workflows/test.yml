@@ -56,6 +56,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      timeout-minutes: 2
 
     - name: Install report and archiver plugins
       run: |
@@ -78,7 +79,6 @@ jobs:
           pip install --no-deps -e .
         cd ..
 
-
     - name: Install requirements
       run: |
         pip install -r dev-requirements.txt
@@ -98,8 +98,11 @@ jobs:
       run: |
         paster --plugin=ckan db init -c test.ini
 #        paster datastore set-permissions -c test-core.ini | sudo -u postgres psql -p $PG_PORT
-    - name: Run all tests
-      run: |
-        #pytest --ckan-ini=test.ini --cov=ckanext.archiver ckanext/archiver/tests
-        nosetests --nologcapture --with-pylons=test.ini --with-coverage --cover-package=ckanext.archiver --cover-inclusive --cover-erase --cover-tests
+
+    - name: Run tests (CKAN >= 2.9)
+      if: ${{ matrix.ckan-version != '2.7' && matrix.ckan-version != '2.8' }}
+       run: pytest --ckan-ini=test.ini --cov=ckanext.archiver --disable-warnings tests
+    - name: Run tests (CKAN < 2.9)
+      if: ${{ matrix.ckan-version == '2.7' || matrix.ckan-version == '2.8' }}
+      run: nosetests --nologcapture --with-pylons=test.ini --with-coverage --cover-package=ckanext.archiver --cover-inclusive --cover-erase --cover-tests
 
