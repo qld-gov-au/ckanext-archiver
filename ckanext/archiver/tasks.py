@@ -308,9 +308,16 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
             try:
                 if hasattr(upload, 'metadata'):
                     file_metadata = upload.metadata(resource['id'])
-                    hash = file_metadata['hash']
-                    length = file_metadata['size']
-                    content_type = file_metadata['content_type']
+                    if isinstance(file_metadata, dict):
+                        hash = file_metadata.get('hash')
+                        length = file_metadata.get('size')
+                        content_type = file_metadata.get('content_type')
+                    else:
+                        # this shouldn't occur for uploaded files,
+                        # but we should handle it gracefully if it does
+                        log.error("Unable to retrieve file metadata: %s",
+                                  file_metadata)
+                        return
                 else:
                     # if the uploader can't provide metadata,
                     # we just have to assume it's a local file.
