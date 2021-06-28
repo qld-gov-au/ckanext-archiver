@@ -313,7 +313,9 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
                         length = file_metadata.get('size')
                         content_type = file_metadata.get('content_type')
                     else:
-                        log.debug("Unable to retrieve file metadata: %s",
+                        # this shouldn't occur for uploaded files,
+                        # but we should handle it gracefully if it does
+                        log.error("Unable to retrieve file metadata: %s",
                                   file_metadata)
                         return
                 else:
