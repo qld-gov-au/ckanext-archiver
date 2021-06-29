@@ -16,21 +16,18 @@ import time
 
 from requests.packages import urllib3
 
-from ckan.common import _
-from ckan.common import config
-from ckan.lib import uploader
 from ckan import plugins as p
+from ckan.common import _
+from ckan.lib import uploader
+from p import toolkit
+from toolkit import config
 from ckan.lib.uploader import ResourceUpload as DefaultResourceUpload
 from ckanext.archiver import interfaces as archiver_interfaces
 from ckanext.archiver import default_settings as settings
-import ckantoolkit as toolkit
 
 import logging
 
-config = toolkit.config
 log = logging.getLogger(__name__)
-
-toolkit = p.toolkit
 
 ALLOWED_SCHEMES = set(('http', 'https', 'ftp'))
 
@@ -40,7 +37,7 @@ USER_AGENT = 'ckanext-archiver'
 uploaderHasDownloadEnabled = hasattr(DefaultResourceUpload, "download")
 
 # CKAN 2.7 introduces new jobs system
-if p.toolkit.check_ckan_version(max_version='2.6.99'):
+if toolkit.check_ckan_version(max_version='2.6.99'):
     from ckan.lib.celery_app import celery
 
     @celery.task(name="archiver.update_resource")

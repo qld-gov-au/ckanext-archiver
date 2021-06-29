@@ -66,7 +66,7 @@ class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
         # try to use activity stream to check if dataset changed
         context = {'model': model, 'session': model.Session, 'ignore_auth': True}
         if p.toolkit.check_ckan_version(min_version='2.8.0'):
-            data_dict = {'id': package.id, 'limit':2}
+            data_dict = {'id': package.id, 'limit': 2}
 
             activity_list = p.toolkit.get_action('package_activity_list')(context, data_dict)
             if len(activity_list) <= 1:
