@@ -19,14 +19,14 @@ from requests.packages import urllib3
 from ckan import plugins as p
 from ckan.common import _
 from ckan.lib import uploader
-from p import toolkit
-from toolkit import config
 from ckan.lib.uploader import ResourceUpload as DefaultResourceUpload
 from ckanext.archiver import interfaces as archiver_interfaces
 from ckanext.archiver import default_settings as settings
 
 import logging
 
+toolkit = p.toolkit
+config = toolkit.config
 log = logging.getLogger(__name__)
 
 ALLOWED_SCHEMES = set(('http', 'https', 'ftp'))
@@ -257,8 +257,6 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
     load_config(ckan_ini_filepath)
 
     from ckan import model
-    from pylons import config
-    from ckan.plugins import toolkit
     from ckanext.archiver.model import Status, Archival
 
     get_action = toolkit.get_action
@@ -443,7 +441,6 @@ def download(context, resource, url_timeout=30,
       mimetype, size, hash, headers, saved_file, url_redirected_to
     '''
     from ckanext.archiver import default_settings as settings
-    from pylons import config
 
     if max_content_length == 'default':
         max_content_length = settings.MAX_CONTENT_LENGTH
@@ -697,7 +694,6 @@ def get_plugins_waiting_on_ipipe():
 
 
 def verify_https():
-    from pylons import config
     return toolkit.asbool(config.get('ckanext-archiver.verify_https', True))
 
 
