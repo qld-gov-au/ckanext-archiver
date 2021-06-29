@@ -4,5 +4,5 @@ ckanapi==4.3
 ProgressBar==2.3
 nose
 mock
-pytest~=4.6.5
-pytest-cov~=2.7.1
+pytest-ckan
+pytest-cov
