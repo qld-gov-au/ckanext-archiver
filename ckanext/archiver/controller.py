@@ -37,7 +37,7 @@ class ArchiverController(base.BaseController):
         # Archived files are only link's not uploads
         if resource.get('url_type') != 'upload':
 
-            # Return the key used for this resource in S3.
+            # Return the key used for this resource in storage.
             #
             # Keys are in the form:
             # <uploaderpath>/<upload_to>/<2 char from resource id >/<resource id>/<filename>

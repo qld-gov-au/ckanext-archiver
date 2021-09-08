@@ -10,7 +10,7 @@ import itertools
 import ckan.plugins as p
 from ckan.lib import uploader
 
-from pylons import config
+from ckan.plugins.toolkit import config
 try:
     from collections import OrderedDict  # from python 2.7
 except ImportError:
