@@ -16,20 +16,18 @@ import time
 
 from requests.packages import urllib3
 
+from ckan import plugins as p
 from ckan.common import _
 from ckan.lib import uploader
-from ckan import plugins as p
 from ckan.lib.uploader import ResourceUpload as DefaultResourceUpload
 from ckanext.archiver import interfaces as archiver_interfaces
 from ckanext.archiver import default_settings as settings
-import ckantoolkit as toolkit
 
 import logging
 
+toolkit = p.toolkit
 config = toolkit.config
 log = logging.getLogger(__name__)
-
-toolkit = p.toolkit
 
 ALLOWED_SCHEMES = set(('http', 'https', 'ftp'))
 
@@ -39,7 +37,7 @@ USER_AGENT = 'ckanext-archiver'
 uploaderHasDownloadEnabled = hasattr(DefaultResourceUpload, "download")
 
 # CKAN 2.7 introduces new jobs system
-if p.toolkit.check_ckan_version(max_version='2.6.99'):
+if toolkit.check_ckan_version(max_version='2.6.99'):
     from ckan.lib.celery_app import celery
 
     @celery.task(name="archiver.update_resource")
@@ -263,8 +261,6 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
     load_config(ckan_ini_filepath)
 
     from ckan import model
-    from pylons import config
-    from ckan.plugins import toolkit
     from ckanext.archiver.model import Status, Archival
 
     get_action = toolkit.get_action
@@ -449,7 +445,6 @@ def download(context, resource, url_timeout=30,
       mimetype, size, hash, headers, saved_file, url_redirected_to
     '''
     from ckanext.archiver import default_settings as settings
-    from pylons import config
 
     if max_content_length == 'default':
         max_content_length = settings.MAX_CONTENT_LENGTH
@@ -601,7 +596,7 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
     Returns: {cache_filepath, cache_url}
     """
 
-    # Return the key used for this resource in S3.
+    # Return the key used for this resource in storage.
     #
     # Keys are in the form:
     # <uploaderpath>/<upload_to>/<2 char from resource id >/<resource id>/<filename>
@@ -703,7 +698,6 @@ def get_plugins_waiting_on_ipipe():
 
 
 def verify_https():
-    from pylons import config
     return toolkit.asbool(config.get('ckanext-archiver.verify_https', True))
 
 
