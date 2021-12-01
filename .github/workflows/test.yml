@@ -1,8 +1,6 @@
 ---
-#based on https://raw.githubusercontent.com/ckan/ckanext-scheming/master/.github/workflows/test.yml
-# alternative https://github.com/ckan/ckan/blob/master/contrib/cookiecutter/ckan_extension/%7B%7Bcookiecutter.project%7D%7D/.github/workflows/test.yml
 name: Tests
-on: [push]
+on: [push, pull_request]
 env:
   CKAN_SQLALCHEMY_URL: postgresql://ckan_default:pass@postgres/ckan_test
   CKAN_DATASTORE_WRITE_URL: postgresql://datastore_write:pass@postgres/datastore_test
@@ -99,9 +97,5 @@ jobs:
           paster --plugin=ckan db init -c test.ini
           paster --plugin=ckanext-archiver archiver init -c test.ini
 
-      - name: Run tests (CKAN >= 2.9)
-        if: ${{ matrix.ckan-version != '2.7' && matrix.ckan-version != '2.8' }}
+      - name: Run tests
         run: pytest --ckan-ini=test.ini --cov=ckanext.archiver --disable-warnings tests
-      - name: Run tests (CKAN < 2.9)
-        if: ${{ matrix.ckan-version == '2.7' || matrix.ckan-version == '2.8' }}
-        run: nosetests --nologcapture --with-pylons=test.ini --with-coverage --cover-package=ckanext.archiver --cover-inclusive --cover-erase --cover-tests
