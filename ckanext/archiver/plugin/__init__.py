@@ -1,6 +1,5 @@
 import logging
 
-from routes.mapper import SubMapper
 from ckan import model
 from ckan import plugins as p
 
@@ -14,7 +13,13 @@ from ckanext.archiver.model import Archival, aggregate_archivals_for_a_dataset
 log = logging.getLogger(__name__)
 
 
-class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
+if p.toolkit.check_ckan_version("2.9"):
+    from ckanext.archiver.plugin.flask_plugin import MixinPlugin
+else:
+    from ckanext.archiver.plugin.pylons_plugin import MixinPlugin
+
+
+class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
     """
     Registers to be notified whenever CKAN resources are created or their URLs
     change, and will create a new ckanext.archiver celery task to archive the
@@ -27,7 +32,6 @@ class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
     p.implements(p.IAuthFunctions)
     p.implements(p.ITemplateHelpers)
     p.implements(p.IPackageController, inherit=True)
-    p.implements(p.IRoutes, inherit=True)
 
     # IDomainObjectModification
 
@@ -172,7 +176,7 @@ class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
     # IConfigurer
 
     def update_config(self, config):
-        p.toolkit.add_template_directory(config, 'templates')
+        p.toolkit.add_template_directory(config, '../templates')
 
     # IActions
 
@@ -222,18 +226,6 @@ class ArchiverPlugin(p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
                 del archival_dict['package_id']
                 del archival_dict['resource_id']
                 res['archiver'] = archival_dict
-
-    # IRoutes
-    def before_map(self, map):
-        with SubMapper(map, controller='ckanext.archiver.controller:ArchiverController') as m:
-            # Override the resource download links
-            m.connect('archive_download',
-                      '/dataset/{id}/resource/{resource_id}/archive',
-                      action='archive_download')
-            m.connect('archive_download',
-                      '/dataset/{id}/resource/{resource_id}/archive/{filename}',
-                      action='archive_download')
-        return map
 
 
 class TestIPipePlugin(p.SingletonPlugin):
