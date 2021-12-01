@@ -3,12 +3,15 @@ import ckan.plugins as p
 
 
 def load_config(config_filepath):
-    import paste.deploy
-    config_abs_path = os.path.abspath(config_filepath)
-    conf = paste.deploy.appconfig('config:' + config_abs_path)
-    import ckan
-    ckan.config.environment.load_environment(conf.global_conf,
-                                             conf.local_conf)
+    try:
+        from ckan.config.middleware import make_app
+        from ckan.cli import CKANConfigLoader
+        abspath = os.path.join(os.path.dirname(os.path.abspath(__file__)))
+        config = CKANConfigLoader(config_filepath).get_config()
+        application = make_app(config)
+    except ImportError:
+        from paste.deploy import loadapp
+        application = loadapp('config:%s' % config_filepath)
 
 
 def register_translator():

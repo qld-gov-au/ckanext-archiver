@@ -370,9 +370,9 @@ class TestArchiver():
                    'session': model.Session}
         get_action('resource_update')(context, data_dict)
 
-        assert_equal(send_task.called, True)
+        assert_equal(mock_send_task.called, True)
 
-        args, kwargs = send_task.call_args
+        args, kwargs = mock_send_task.call_args
         assert args == ('archiver.update_package',)
 
     @with_mock_url('?status=200&content=test&content-type=csv')
