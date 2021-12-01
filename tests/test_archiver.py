@@ -14,7 +14,7 @@ from nose.tools import assert_raises, assert_equal
 from ckan import model
 from ckan import plugins
 from ckan.logic import get_action
-from ckan.tests import helpers as ckan_helpers, factories as ckan_factories, BaseCase
+from ckan.tests import helpers as ckan_helpers, factories as ckan_factories
 
 from ckanext.archiver import model as archiver_model
 from ckanext.archiver.model import Archival
@@ -58,7 +58,7 @@ def with_mock_url(url=''):
     return decorator
 
 
-class TestLinkChecker(BaseCase):
+class TestLinkChecker():
     """
     Tests for link checker task
     """
@@ -163,7 +163,7 @@ class TestLinkChecker(BaseCase):
         assert result
 
 
-class TestArchiver(BaseCase):
+class TestArchiver():
     """
     Tests for Archiver 'update_resource'/'update_package' tasks
     """
@@ -404,7 +404,7 @@ class TestArchiver(BaseCase):
         return json.loads(result)
 
 
-class TestDownload(BaseCase):
+class TestDownload():
     '''Tests of the download method (and things it calls).
 
     Doesn't need a fake CKAN to get/set the status of.

@@ -1,7 +1,7 @@
 import logging
 
 from ckan import model
-from ckan.tests import helpers as ckan_helpers, factories as ckan_factories, BaseCase
+from ckan.tests import helpers as ckan_helpers, factories as ckan_factories
 
 from ckanext.archiver import plugin, model as archiver_model
 
@@ -14,7 +14,7 @@ def get_logger():
     return log
 
 
-class TestPlugin(BaseCase):
+class TestPlugin():
     """
     Tests for plugin 'is_it_sufficient_change_to_run_archiver?' logic.
     """
