@@ -361,7 +361,7 @@ class TestArchiver():
     @unittest.skipIf(plugins.toolkit.check_ckan_version(min_version='2.7.0'), '2.7 has deprecated celery')
     @with_mock_url('?status=200&content=test&content-type=csv')
     @mock.patch('ckan.lib.celery_app.celery.send_task')
-    def test_package_achived_when_resource_modified(self, url, send_task):
+    def test_package_archived_when_resource_modified(self, url, mock_send_task):
         data_dict = self._test_resource(url)
         data_dict['url'] = 'http://example.com/foo'
         context = {'model': model,
