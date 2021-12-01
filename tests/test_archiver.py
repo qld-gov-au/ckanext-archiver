@@ -14,13 +14,7 @@ from nose.tools import assert_raises, assert_equal
 from ckan import model
 from ckan import plugins
 from ckan.logic import get_action
-from ckan.tests import helpers as ckan_helpers
-try:
-    from ckan.new_tests import factories as ckan_factories
-    from ckan.tests import BaseCase
-except ImportError:
-    from ckan.tests import factories as ckan_factories
-    from ckan.tests.legacy import BaseCase
+from ckan.tests import helpers as ckan_helpers, factories as ckan_factories, BaseCase
 
 from ckanext.archiver import model as archiver_model
 from ckanext.archiver.model import Archival
