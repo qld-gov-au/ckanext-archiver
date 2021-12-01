@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 import ckan.plugins as p
-from ckanext.archiver.controllers import blueprints
+from ckanext.archiver.controller import blueprints
 from ckanext.archiver.cli import click_cli
 
 

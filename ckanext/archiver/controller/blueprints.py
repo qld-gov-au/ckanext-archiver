@@ -2,7 +2,7 @@
 
 from flask import Blueprint
 
-from ckanext.archiver.controllers import archive_download
+from . import archive_download
 
 
 archival = Blueprint(
