@@ -1,14 +1,13 @@
 import logging
 
 from ckan import model
+from ckan.tests import helpers as ckan_helpers
 try:
-    from ckan.tests import helpers as ckan_helpers
-    from ckan.tests import factories as ckan_factories
-    from ckan.tests.legacy import BaseCase
-except ImportError:
-    from ckan.tests import helpers as ckan_helpers
     from ckan.new_tests import factories as ckan_factories
     from ckan.tests import BaseCase
+except ImportError:
+    from ckan.tests import factories as ckan_factories
+    from ckan.tests.legacy import BaseCase
 
 from ckanext.archiver import plugin, model as archiver_model
 
