@@ -430,7 +430,7 @@ class TestDownload():
         pkg = {'name': 'testpkg', 'resources': [
             {'url': url, 'format': format or 'TXT', 'description': 'Test'}
         ]}
-        pkg = get_action('package_create')(context, pkg)
+        pkg = ckan_factories.Dataset(**pkg)
         return pkg['resources'][0]
 
     @with_mock_url('?status=200&method=get&content=test&content-type=csv')
