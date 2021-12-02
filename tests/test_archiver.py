@@ -177,8 +177,6 @@ class TestArchiver():
 
         cls.temp_dir = tempfile.mkdtemp()
 
-        cls.config = config
-
     @classmethod
     def teardown_class(cls):
         os.removedirs(cls.temp_dir)
@@ -210,13 +208,13 @@ class TestArchiver():
 
     def test_file_url(self):
         res_id = self._test_resource('file:///home/root/test.txt')['id']  # scheme not allowed
-        result = update_resource(self.config, res_id)
+        result = update_resource(None, res_id)
         assert not result, result
         self.assert_archival_error('Invalid url scheme', res_id)
 
     def test_bad_url(self):
         res_id = self._test_resource('http:host.com')['id']  # no slashes
-        result = update_resource(self.config, res_id)
+        result = update_resource(None, res_id)
         assert not result, result
         self.assert_archival_error('URL parsing failure', res_id)
 
@@ -287,21 +285,21 @@ class TestArchiver():
     def test_update_with_zero_length(self, url):
         # i.e. no content
         res_id = self._test_resource(url)['id']
-        result = update_resource(self.config, res_id)
+        result = update_resource(None, res_id)
         assert not result, result
         self.assert_archival_error('Content-length after streaming was 0', res_id)
 
     @with_mock_url('?status=404&content=test&content-type=csv')
     def test_file_not_found(self, url):
         res_id = self._test_resource(url)['id']
-        result = update_resource(self.config, res_id)
+        result = update_resource(None, res_id)
         assert not result, result
         self.assert_archival_error('Server reported status error: 404 Not Found', res_id)
 
     @with_mock_url('?status=500&content=test&content-type=csv')
     def test_server_error(self, url):
         res_id = self._test_resource(url)['id']
-        result = update_resource(self.config, res_id)
+        result = update_resource(None, res_id)
         assert not result, result
         self.assert_archival_error('Server reported status error: 500 Internal Server Error', res_id)
 
@@ -309,7 +307,7 @@ class TestArchiver():
     def test_file_too_large_1(self, url):
         # will stop after receiving the header
         res_id = self._test_resource(url)['id']
-        result = update_resource(self.config, res_id)
+        result = update_resource(None, res_id)
         assert not result, result
         self.assert_archival_error('Content-length 1000001 exceeds maximum allowed value 1000000', res_id)
 
@@ -317,7 +315,7 @@ class TestArchiver():
     def test_file_too_large_2(self, url):
         # no size info in headers - it stops only after downloading the content
         res_id = self._test_resource(url)['id']
-        result = update_resource(self.config, res_id)
+        result = update_resource(None, res_id)
         assert not result, result
         self.assert_archival_error('Content-length 1000001 exceeds maximum allowed value 1000000', res_id)
 
@@ -351,7 +349,7 @@ class TestArchiver():
 
         res_id = self._test_resource(url)['id']
 
-        update_resource(self.config, res_id, 'queue1')
+        update_resource(None, res_id, 'queue1')
 
         assert len(testipipe.calls) == 1
 
@@ -385,7 +383,7 @@ class TestArchiver():
 
         pkg = self._test_package(url)
 
-        update_package(self.config, pkg['id'], 'queue1')
+        update_package(None, pkg['id'], 'queue1')
 
         assert len(testipipe.calls) == 2, len(testipipe.calls)
 
@@ -402,7 +400,7 @@ class TestArchiver():
         assert params.get('resource_id') is None
 
     def _get_update_resource_json(self, id):
-        result = update_resource(self.config, id)
+        result = update_resource(None, id)
         assert result, "update_resource returned: " + result
         return json.loads(result)
 
