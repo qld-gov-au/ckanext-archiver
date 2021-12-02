@@ -59,7 +59,8 @@ def with_mock_url(url=''):
         @wraps(func)
         def decorated(*args, **kwargs):
             with MockEchoTestServer().serve() as serveraddr:
-                return func(*(args + ('%s/%s' % (serveraddr, url),)), **kwargs)
+                kwargs[u'url'] = '%s/%s' % (serveraddr, url)
+                return func(*args, **kwargs)
         return decorated
     return decorator
 
