@@ -1,9 +1,15 @@
+# encoding: utf-8
+
 import logging
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 from ckan import model, plugins
 from ckan.tests import helpers as ckan_helpers, factories as ckan_factories
 
-from ckanext.archiver import plugin, model as archiver_model
+from ckanext.archiver import model as archiver_model
 
 
 # enable celery logging for when you run nosetests -s
@@ -74,30 +80,27 @@ class TestPlugin():
         pkg = self._test_package()
         log.debug("Testing unchanged package [%s]", pkg)
 
-        # add a placeholder modification so the activity stream gets updated
-        ckan_helpers.call_action('package_patch', id=pkg.id)
-        result = plugin.ArchiverPlugin()._is_it_sufficient_change_to_run_archiver(pkg, 'updated')
-
-        assert result is False, "Expected archival to be skipped"
+        with mock.patch('ckanext.archiver.lib.create_archiver_package_task') as create_task:
+            # add a placeholder modification so the activity stream gets updated
+            ckan_helpers.call_action('package_patch', id=pkg.id)
+            create_task.assert_not_called()
 
     def test_link_resource_changed(self):
         pkg = self._test_package()
         pkg.resources[0].url = pkg.resources[0].url + '-updated'
         log.debug("Testing altered package [%s]", pkg)
 
-        # add a placeholder modification so the activity stream gets updated
-        ckan_helpers.call_action('package_patch', id=pkg.id)
-        result = plugin.ArchiverPlugin()._is_it_sufficient_change_to_run_archiver(pkg, 'updated')
-
-        assert result, "Expected archival to be needed"
+        with mock.patch('ckanext.archiver.lib.create_archiver_package_task') as create_task:
+            # add a placeholder modification so the activity stream gets updated
+            ckan_helpers.call_action('package_patch', id=pkg.id)
+            create_task.assert_called_with(pkg, 'priority')
 
     def test_upload_resource_unchanged(self):
         pkg = self._test_package(name="test-archiver-upload", url_type="upload")
         pkg.resources[0].url = pkg.resources[0].url + '-updated'
         log.debug("Testing package with unchanged upload contents [%s]", pkg)
 
-        # add a placeholder modification so the activity stream gets updated
-        ckan_helpers.call_action('package_patch', id=pkg.id)
-        result = plugin.ArchiverPlugin()._is_it_sufficient_change_to_run_archiver(pkg, 'updated')
-
-        assert result is False, "Expected archival to be skipped"
+        with mock.patch('ckanext.archiver.lib.create_archiver_package_task') as create_task:
+            # add a placeholder modification so the activity stream gets updated
+            ckan_helpers.call_action('package_patch', id=pkg.id)
+            create_task.assert_not_called()
