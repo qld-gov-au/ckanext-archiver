@@ -1,4 +1,3 @@
-import ckan
 import ckan.plugins as p
 
 
