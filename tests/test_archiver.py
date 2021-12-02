@@ -1,5 +1,6 @@
 # encoding: utf-8
 
+from functools import wraps
 import json
 import logging
 import os
@@ -12,7 +13,6 @@ try:
 except ImportError:
     import mock
 
-import decorator
 
 from ckan.common import config
 from nose.tools import assert_raises, assert_equal
@@ -55,12 +55,13 @@ def with_mock_url(url=''):
     """
     Start a MockEchoTestServer call the decorated function with the server's address prepended to ``url``.
     """
-    def wrapper(func):
-        def wrapped(*args, **kwargs):
+    def decorator(func):
+        @wraps(func)
+        def decorated(*args, **kwargs):
             with MockEchoTestServer().serve() as serveraddr:
                 return func(*(args + ('%s/%s' % (serveraddr, url),)), **kwargs)
-        return decorator.decorator(wrapped, func)
-    return wrapper
+        return decorated
+    return decorator
 
 
 class TestLinkChecker():
