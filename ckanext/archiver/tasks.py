@@ -57,13 +57,7 @@ if toolkit.check_ckan_version(max_version='2.6.99'):
 
 
 def load_config(ckan_ini_filepath):
-    try:
-        from ckan.cli import CKANConfigLoader
-        conf = CKANConfigLoader(ckan_ini_filepath).get_config()
-    except ImportError:
-        from paste.deploy import appconfig
-        conf = appconfig('config:%s' % ckan_ini_filepath)
-    p.toolkit.load_config(conf)
+    toolkit.load_config(ckan_ini_filepath)
 
     # give routes enough information to run url_for
     parsed = urlparse.urlparse(config.get('ckan.site_url', 'http://0.0.0.0'))

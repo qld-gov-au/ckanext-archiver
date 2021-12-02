@@ -2,8 +2,7 @@ import ckan.plugins as p
 
 
 def load_config(config_filepath):
-    import ckanext.archiver.tasks.load_config as load_config_path
-    load_config_path(config_filepath)
+    p.toolkit.load_config(config_filepath)
 
 
 def register_translator():
