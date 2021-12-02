@@ -5,7 +5,7 @@ import os
 import six
 
 import ckan.plugins as p
-from p.toolkit import config
+from ckan.plugins.toolkit import config
 
 from ckanext.archiver.tasks import update_package, update_resource
 
