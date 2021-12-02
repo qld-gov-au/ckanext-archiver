@@ -63,7 +63,7 @@ class TestPlugin():
                         'url_type': url_type,
                         'format': format or 'TXT', 'description': 'Test'}
                    ]}
-            ckan_factories.Dataset(**pkg)
+            ckan_helpers.call_action('package_create', **pkg)
             pkg = load_model_package()
         if plugins.toolkit.check_ckan_version(max_version="2.8"):
             model.repo.new_revision()
