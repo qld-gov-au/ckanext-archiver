@@ -28,7 +28,7 @@ class TestPlugin():
         for package_name in ['test-archiver', 'test-archiver-upload']:
             pkg = model.Package.get(package_name)
             if pkg:
-                if plugins.toolkit.check_ckan_version("2.8"):
+                if plugins.toolkit.check_ckan_version(max_version="2.8"):
                     model.repo.new_revision()
                 pkg.purge()
                 model.repo.commit_and_remove()
@@ -65,7 +65,7 @@ class TestPlugin():
                    ]}
             ckan_factories.Dataset(**pkg)
             pkg = load_model_package()
-        if plugins.toolkit.check_ckan_version("2.8"):
+        if plugins.toolkit.check_ckan_version(max_version="2.8"):
             model.repo.new_revision()
         model.repo.commit()
         return pkg
