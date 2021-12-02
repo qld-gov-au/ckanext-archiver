@@ -1,5 +1,8 @@
+# encoding: utf-8
+
 import os
-import urlparse
+from six.moves.urllib import parse as urlparse
+
 import ckantoolkit as toolkit
 import ckan.logic as logic
 import ckan.lib.base as base

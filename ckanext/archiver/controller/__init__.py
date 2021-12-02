@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 import os
-from six.moves.urllib.parse import urlparse
+from six.moves.urllib import parse as urlparse
 
 from ckan import model
 from ckan.common import _, c
@@ -37,7 +37,7 @@ def archive_download(id, resource_id, filename=None):
         relative_archive_path = os.path.join(resource['id'][:2], resource['id'])
 
         # try to get a file name from the url
-        parsed_url = urlparse(resource.get('url'))
+        parsed_url = urlparse.urlparse(resource.get('url'))
         try:
             file_name = parsed_url.path.split('/')[-1] or 'resource'
             file_name = file_name.strip()  # trailing spaces cause problems

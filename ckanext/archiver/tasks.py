@@ -1,17 +1,19 @@
-import os
-import hashlib
-import requests
-import json
-import urllib
-import urlparse
-import tempfile
-import shutil
-import datetime
+# encoding: utf-8
+
 import copy
+import datetime
+import hashlib
+import json
 import mimetypes
-import six
+import os
+import requests
 import routes
+import shutil
+from six.moves.urllib import parse as urlparse
+import six
+import tempfile
 import time
+import urllib
 
 from requests.packages import urllib3
 
