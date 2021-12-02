@@ -29,8 +29,6 @@ jobs:
       matrix:
         ckan-version: [2.9, 2.9-py2, 2.8, 2.7]
         env:
-          - { REPORT_GIT_REPO: "datagovuk", REPORT_BRANCH: "master" }
-          - { REPORT_GIT_REPO: "qld-gov-au", REPORT_BRANCH: "0.1" }
           - { REPORT_GIT_REPO: "qld-gov-au", REPORT_BRANCH: "develop" }
       fail-fast: false
 
