@@ -1,13 +1,15 @@
-import logging
-import os
-import shutil
-import tempfile
+# encoding: utf-8
+
 from functools import wraps
 import json
+import logging
 import mock
+import os
+import shutil
+from six.moves.urllib.parse import quote_plus
+import tempfile
 import unittest
 
-from urllib import quote_plus
 from ckan.common import config
 from nose.tools import assert_raises, assert_equal
 
@@ -175,7 +177,7 @@ class TestArchiver():
 
         cls.temp_dir = tempfile.mkdtemp()
 
-        cls.config = config.__file__
+        cls.config = config
 
     @classmethod
     def teardown_class(cls):
@@ -413,7 +415,6 @@ class TestDownload():
     @classmethod
     def setup_class(cls):
         ckan_helpers.reset_db()
-        config
         cls.fake_context = {
             'site_url': config.get('ckan.site_url_internally') or config['ckan.site_url'],
             'cache_url_root': config.get('ckanext-archiver.cache_url_root'),
