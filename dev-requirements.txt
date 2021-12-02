@@ -1,7 +1,6 @@
 factory-boy==2.1.1
 flask==1.0.2
 ckanapi==4.3
-progressbar2==3.55.0
 mock
 pytest-ckan
 pytest-cov
