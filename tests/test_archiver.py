@@ -99,7 +99,7 @@ class TestLinkChecker():
 
     @with_mock_url('+/http://www.homeoffice.gov.uk/publications/science-research-statistics/research-statistics/'
                    'drugs-alcohol-research/hosb1310/hosb1310-ann2tabs?view=Binary')
-    def test_non_escaped_url(self, url):
+    def test_non_escaped_url(self, mock_url):
         context = json.dumps({})
         data = json.dumps({'url': mock_url})
         res = link_checker(context, data)
