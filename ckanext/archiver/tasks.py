@@ -1,6 +1,5 @@
 import os
 import hashlib
-import httplib
 import requests
 import json
 import urllib
@@ -1015,7 +1014,7 @@ def link_checker(context, data):
     try:
         res = requests.head(url, timeout=url_timeout)
         headers = res.headers
-    except httplib.InvalidURL as ve:
+    except requests.exceptions.InvalidURL as ve:
         log.error("Could not make a head request to %r, error is: %s."
                   " Package is: %r. This sometimes happens when using an old version of requests on a URL"
                   " which issues a 301 redirect. Version=%s", url, ve, data.get('package'), requests.__version__)
