@@ -58,8 +58,7 @@ if toolkit.check_ckan_version(max_version='2.6.99'):
 
 
 def load_config(ckan_ini_filepath):
-    import ckan
-    ckan.config.environment.load_environment(config)
+    toolkit.load_config(config)
 
     # give routes enough information to run url_for
     parsed = urlparse.urlparse(config.get('ckan.site_url', 'http://0.0.0.0'))
@@ -141,7 +140,6 @@ def update_resource(ckan_ini_filepath, resource_id, queue='bulk'):
     Archive a resource.
     '''
     load_config(ckan_ini_filepath)
-    register_translator()
 
     log.info('Starting update_resource task: res_id=%r queue=%s', resource_id, queue)
 
@@ -168,7 +166,6 @@ def update_package(ckan_ini_filepath, package_id, queue='bulk'):
     Archive a package.
     '''
     load_config(ckan_ini_filepath)
-    register_translator()
 
     log.info('Starting update_package task: package_id=%r queue=%s',
              package_id, queue)
