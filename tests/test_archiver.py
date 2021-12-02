@@ -1,15 +1,17 @@
 # encoding: utf-8
 
-import pytest
 from functools import wraps
 import json
 import logging
-import mock
 import os
 import shutil
 from six.moves.urllib.parse import quote_plus
 import tempfile
 import unittest
+try:
+    from unittest import mock
+except ImportError:
+    import mock
 
 from ckan.common import config
 from nose.tools import assert_raises, assert_equal
@@ -48,7 +50,6 @@ update_resource.get_logger = get_logger
 update_package.get_logger = get_logger
 
 
-@pytest.fixture
 def with_mock_url(url=''):
     """
     Start a MockEchoTestServer call the decorated function with the server's address prepended to ``url``.
