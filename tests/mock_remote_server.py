@@ -6,7 +6,7 @@ from contextlib import contextmanager
 from threading import Thread
 from time import sleep
 from wsgiref.simple_server import make_server
-import urllib2
+from six.moves.urllib import parse as urllib2
 import six
 import socket
 import os
