@@ -1,5 +1,6 @@
 # encoding: utf-8
 
+import pytest
 from functools import wraps
 import json
 import logging
@@ -47,6 +48,7 @@ update_resource.get_logger = get_logger
 update_package.get_logger = get_logger
 
 
+@pytest.fixture
 def with_mock_url(url=''):
     """
     Start a MockEchoTestServer call the decorated function with the server's address prepended to ``url``.
