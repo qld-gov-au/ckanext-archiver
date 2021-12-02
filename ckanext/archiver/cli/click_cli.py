@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 import click
-from .command_functions import ArchivalCommands
+from . import ArchivalCommands
 
 
 # Click commands for CKAN 2.9 and above

@@ -1,4 +1,5 @@
 # encoding: utf-8
+
 import itertools
 import logging
 import os
@@ -42,14 +43,14 @@ class ArchivalCommands():
                 package = pkg_or_res
                 log.info('Queuing dataset %s (%s resources)',
                          package.name, num_resources_for_pkg)
-                lib.create_archiver_package_task(package, queue)
+                lib.create_archiver_package_task(package, self.queue)
                 time.sleep(0.1)  # to try to avoid Redis getting overloaded
             else:
                 resource = pkg_or_res
                 package = pkg_for_res
                 log.info('Queuing resource %s/%s',
                          package.name, resource.id)
-                lib.create_archiver_resource_task(resource, queue)
+                lib.create_archiver_resource_task(resource, self.queue)
                 time.sleep(0.05)  # to try to avoid Redis getting overloaded
         log.info('Completed queueing')
 
@@ -64,13 +65,13 @@ class ArchivalCommands():
                 package = pkg_or_res
                 log.info('Archiving dataset %s (%s resources)',
                          package.name, num_resources_for_pkg)
-                tasks._update_package(package.id, queue, log)
+                tasks._update_package(package.id, self.queue, log)
             else:
                 resource = pkg_or_res
                 package = pkg_for_res
                 log.info('Archiving resource %s/%s',
                          package.name, resource.id)
-                tasks._update_resource(resource.id, queue, log)
+                tasks._update_resource(resource.id, self.queue, log)
         log.info('Completed test update')
 
     def _get_packages_and_resources_in_args(self, ids):
