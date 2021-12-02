@@ -75,7 +75,7 @@ class TestPlugin():
         log.debug("Testing unchanged package [%s]", pkg)
 
         # add a placeholder modification so the activity stream gets updated
-        ckan_helpers.package_patch({'ignore_auth': True}, {'id': pkg.id})
+        ckan_helpers.call_action('package_patch', id=pkg.id)
         result = plugin.ArchiverPlugin()._is_it_sufficient_change_to_run_archiver(pkg, 'updated')
 
         assert result is False, "Expected archival to be skipped"
@@ -86,7 +86,7 @@ class TestPlugin():
         log.debug("Testing altered package [%s]", pkg)
 
         # add a placeholder modification so the activity stream gets updated
-        ckan_helpers.package_patch({'ignore_auth': True}, {'id': pkg.id})
+        ckan_helpers.call_action('package_patch', id=pkg.id)
         result = plugin.ArchiverPlugin()._is_it_sufficient_change_to_run_archiver(pkg, 'updated')
 
         assert result, "Expected archival to be needed"
@@ -97,7 +97,7 @@ class TestPlugin():
         log.debug("Testing package with unchanged upload contents [%s]", pkg)
 
         # add a placeholder modification so the activity stream gets updated
-        ckan_helpers.package_patch({'ignore_auth': True}, {'id': pkg.id})
+        ckan_helpers.call_action('package_patch', id=pkg.id)
         result = plugin.ArchiverPlugin()._is_it_sufficient_change_to_run_archiver(pkg, 'updated')
 
         assert result is False, "Expected archival to be skipped"
