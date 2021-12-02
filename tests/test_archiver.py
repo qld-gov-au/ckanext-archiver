@@ -51,14 +51,16 @@ update_resource.get_logger = get_logger
 update_package.get_logger = get_logger
 
 
-def with_mock_url(func, url=''):
+def with_mock_url(url=''):
     """
     Start a MockEchoTestServer call the decorated function with the server's address prepended to ``url``.
     """
-    def wrapper(func, *args, **kwargs):
-        with MockEchoTestServer().serve() as serveraddr:
-            return func(*(args + ('%s/%s' % (serveraddr, url),)), **kwargs)
-    return decorator.decorator(wrapper, func)
+    def decorator(func):
+        def decorated(*args, **kwargs):
+            with MockEchoTestServer().serve() as serveraddr:
+                return func(*(args + ('%s/%s' % (serveraddr, url),)), **kwargs)
+        return decorator.decorator(decorated, func)
+    return decorator
 
 
 class TestLinkChecker():
