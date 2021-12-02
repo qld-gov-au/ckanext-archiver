@@ -55,12 +55,12 @@ def with_mock_url(url=''):
     """
     Start a MockEchoTestServer call the decorated function with the server's address prepended to ``url``.
     """
-    def decorator(func):
-        def decorated(*args, **kwargs):
+    def wrapper(func):
+        def wrapped(*args, **kwargs):
             with MockEchoTestServer().serve() as serveraddr:
                 return func(*(args + ('%s/%s' % (serveraddr, url),)), **kwargs)
-        return decorator.decorator(decorated, func)
-    return decorator
+        return decorator.decorator(wrapped, func)
+    return wrapper
 
 
 class TestLinkChecker():
