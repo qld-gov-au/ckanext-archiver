@@ -184,7 +184,8 @@ class TestArchiver():
     def teardown(self):
         pkg = model.Package.get(u'testpkg')
         if pkg:
-            model.repo.new_revision()
+            if plugins.toolkit.check_ckan_version("2.8"):
+                model.repo.new_revision()
             pkg.purge()
             model.repo.commit_and_remove()
 
@@ -421,7 +422,8 @@ class TestDownload():
     def teardown(self):
         pkg = model.Package.get(u'testpkg')
         if pkg:
-            model.repo.new_revision()
+            if plugins.toolkit.check_ckan_version("2.8"):
+                model.repo.new_revision()
             pkg.purge()
             model.repo.commit_and_remove()
 

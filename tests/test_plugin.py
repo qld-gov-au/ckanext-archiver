@@ -1,6 +1,6 @@
 import logging
 
-from ckan import model
+from ckan import model, plugins
 from ckan.tests import helpers as ckan_helpers, factories as ckan_factories
 
 from ckanext.archiver import plugin, model as archiver_model
@@ -28,7 +28,8 @@ class TestPlugin():
         for package_name in ['test-archiver', 'test-archiver-upload']:
             pkg = model.Package.get(package_name)
             if pkg:
-                model.repo.new_revision()
+                if plugins.toolkit.check_ckan_version("2.8"):
+                    model.repo.new_revision()
                 pkg.purge()
                 model.repo.commit_and_remove()
 
@@ -64,7 +65,8 @@ class TestPlugin():
                    ]}
             ckan_factories.Dataset(**pkg)
             pkg = load_model_package()
-        model.repo.new_revision()
+        if plugins.toolkit.check_ckan_version("2.8"):
+            model.repo.new_revision()
         model.repo.commit()
         return pkg
 
