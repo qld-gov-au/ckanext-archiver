@@ -8,7 +8,7 @@ import mock
 import unittest
 
 from urllib import quote_plus
-from pylons import config
+from ckan.common import config
 from nose.tools import assert_raises, assert_equal
 
 from ckan import model
