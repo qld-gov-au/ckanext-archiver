@@ -203,7 +203,7 @@ class MockWmsServer(MockHTTPServer):
         from webob import Request
         request = Request(environ)
         status = int(_get_str_params(request).get('status', '200'))
-        headers = {'Content-Type': 'text/plain'}
+        headers = [('Content-Type', 'text/plain')]
         # e.g. params ?service=WMS&request=GetCapabilities&version=1.1.1
         if _get_str_params(request).get('service') != 'WMS':
             status = 200
@@ -223,7 +223,7 @@ class MockWmsServer(MockHTTPServer):
             content = get_file_content('wms_getcap_1.3.xml')
         start_response(
             '%d %s' % (status, responses[status]),
-            headers.items()
+            headers
         )
         return [six.ensure_binary(content)]
 
@@ -238,7 +238,7 @@ class MockWfsServer(MockHTTPServer):
         from webob import Request
         request = Request(environ)
         status = int(_get_str_params(request).get('status', '200'))
-        headers = {'Content-Type': 'text/plain'}
+        headers = [('Content-Type', 'text/plain')]
         # e.g. params ?service=WFS&request=GetCapabilities
         if _get_str_params(request).get('service') != 'WFS':
             status = 200
@@ -251,7 +251,7 @@ class MockWfsServer(MockHTTPServer):
             content = get_file_content('wfs_getcap.xml')
         start_response(
             '%d %s' % (status, responses[status]),
-            headers.items()
+            headers
         )
         return [six.ensure_binary(content)]
 
