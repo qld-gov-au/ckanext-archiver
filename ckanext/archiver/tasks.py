@@ -509,6 +509,7 @@ def download(context, resource, url_timeout=30,
 
     # continue the download - stream the response body
     def get_content():
+        log.debug("Retrieving content from %s", res)
         return six.ensure_binary(res.content)
     log.info('Downloading the body')
     content = requests_wrapper(log, get_content)
