@@ -19,6 +19,16 @@ except ImportError:
     from http.client import responses
 
 
+def _get_str_params(request):
+    """ Get parameters from the request. If 'str_params' is available,
+    use that, otherwise just use 'params'.
+    """
+    if hasattr(request, 'str_params'):
+        return request.str_params
+    else:
+        return request.params
+
+
 class MockHTTPServer(object):
     """
     Mock HTTP server that can take the place of a remote server for testing
@@ -118,36 +128,36 @@ class MockEchoTestServer(MockHTTPServer):
 
         from webob import Request
         request = Request(environ)
-        status = int(request.params.get('status', '200'))
+        status = int(_get_str_params(request).get('status', '200'))
         # if 'redirect' in redirect.params:
-        #     params = dict([(key, value) for param in request.params \
+        #     params = dict([(key, value) for param in _get_str_params(request) \
         #                    if key != 'redirect'])
-        #     redirect_status = int(request.params['redirect'])
-        #     status = int(request.params.get('status', '200'))
+        #     redirect_status = int(_get_str_params(request)['redirect'])
+        #     status = int(_get_str_params(request).get('status', '200'))
         #     resp = make_response(render_template('error.html'), redirect_status)
         #     resp.headers['Location'] = url_for(request.path, params)
         #     return resp
-        if 'content_var' in request.params:
-            content = request.params.get('content_var')
+        if 'content_var' in _get_str_params(request):
+            content = _get_str_params(request).get('content_var')
             content = self.get_content(content)
-        elif 'content_long' in request.params:
+        elif 'content_long' in _get_str_params(request):
             content = '*' * 1000001
         else:
-            content = request.params.get('content', '')
-        if 'method' in request.params \
-                and request.method.lower() != request.params['method'].lower():
+            content = _get_str_params(request).get('content', '')
+        if 'method' in _get_str_params(request) \
+                and request.method.lower() != _get_str_params(request)['method'].lower():
             content = ''
             status = 405
 
         headers = [
             item
-            for item in request.params.items()
+            for item in _get_str_params(request).items()
             if item[0] not in ('content', 'status')
         ]
-        if 'length' in request.params:
-            cl = request.params.get('length')
+        if 'length' in _get_str_params(request):
+            cl = _get_str_params(request).get('length')
             headers += [('Content-Length', cl)]
-        elif content and 'no-content-length' not in request.params:
+        elif content and 'no-content-length' not in _get_str_params(request):
             headers += [('Content-Length', six.binary_type(len(content)))]
         start_response(
             '%d %s' % (status, responses[status]),
@@ -189,17 +199,17 @@ class MockWmsServer(MockHTTPServer):
     def __call__(self, environ, start_response):
         from webob import Request
         request = Request(environ)
-        status = int(request.params.get('status', '200'))
+        status = int(_get_str_params(request).get('status', '200'))
         headers = {'Content-Type': 'text/plain'}
         # e.g. params ?service=WMS&request=GetCapabilities&version=1.1.1
-        if request.params.get('service') != 'WMS':
+        if _get_str_params(request).get('service') != 'WMS':
             status = 200
             content = ERROR_WRONG_SERVICE
-        elif request.params.get('request') != 'GetCapabilities':
+        elif _get_str_params(request).get('request') != 'GetCapabilities':
             status = 405
             content = '"request" param wrong'
-        elif 'version' in request.params and \
-                request.params.get('version') != self.wms_version:
+        elif 'version' in _get_str_params(request) and \
+                _get_str_params(request).get('version') != self.wms_version:
             status = 405
             content = '"version" not compatible - need to be %s' % self.wms_version
         elif self.wms_version == '1.1.1':
@@ -224,13 +234,13 @@ class MockWfsServer(MockHTTPServer):
     def __call__(self, environ, start_response):
         from webob import Request
         request = Request(environ)
-        status = int(request.params.get('status', '200'))
+        status = int(_get_str_params(request).get('status', '200'))
         headers = {'Content-Type': 'text/plain'}
         # e.g. params ?service=WFS&request=GetCapabilities
-        if request.params.get('service') != 'WFS':
+        if _get_str_params(request).get('service') != 'WFS':
             status = 200
             content = ERROR_WRONG_SERVICE
-        elif request.params.get('request') != 'GetCapabilities':
+        elif _get_str_params(request).get('request') != 'GetCapabilities':
             status = 405
             content = '"request" param wrong'
         else:
