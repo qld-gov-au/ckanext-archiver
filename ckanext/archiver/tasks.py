@@ -944,7 +944,7 @@ def response_is_an_api_error(response_body):
     need to check response bodies for these error messages.
     '''
     log.debug("Checking %s for API errors", response_body)
-    response_sample = response_body[:250]  # to allow for <?xml> and <!DOCTYPE> lines
+    response_sample = six.text_type(response_body[:250])  # to allow for <?xml> and <!DOCTYPE> lines
 
     # WMS spec
     # e.g. https://map.bgs.ac.uk/ArcGIS/services/BGS_Detailed_Geology/MapServer/WMSServer?service=abc
