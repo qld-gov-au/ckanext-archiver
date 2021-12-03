@@ -92,9 +92,9 @@ class MockHTTPServer(object):
         mod = six.moves.reduce(getattr, modpath.split('.')[1:], __import__(modpath))
         var = six.moves.reduce(getattr, var.split('.'), mod)
         try:
-            return var()
+            return six.binary_type(var())
         except TypeError:
-            return var
+            return six.binary_type(var)
 
 
 class MockEchoTestServer(MockHTTPServer):
