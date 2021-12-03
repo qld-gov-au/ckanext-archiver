@@ -158,7 +158,10 @@ class MockEchoTestServer(MockHTTPServer):
             cl = _get_str_params(request).get('length')
             headers += [('Content-Length', cl)]
         elif content and 'no-content-length' not in _get_str_params(request):
-            headers += [('Content-Length', six.text_type(len(content)))]
+            # Python 2 with old WebOb wants bytes,
+            # Python 3 with new WebOb wants text,
+            # so both want 'str'
+            headers += [('Content-Length', str(len(content)))]
         start_response(
             '%d %s' % (status, responses[status]),
             headers
