@@ -344,20 +344,20 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
     try:
         download_result = download(context, resource)
     except NotChanged as e:
-        error = e
+        error = vars(e)
         download_status_id = Status.by_text('Content has not changed')
         try_as_api = False
         requires_archive = False
     except LinkInvalidError as e:
-        error = e
+        error = vars(e)
         download_status_id = Status.by_text('URL invalid')
         try_as_api = False
     except (DownloadException, DownloadError) as e:
-        error = e
+        error = vars(e)
         download_status_id = Status.by_text('Download error')
         try_as_api = True
     except ChooseNotToDownload as e:
-        error = e
+        error = vars(e)
         download_status_id = Status.by_text('Chose not to download')
         try_as_api = False
     except Exception as e:
