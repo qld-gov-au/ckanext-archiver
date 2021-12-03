@@ -340,20 +340,24 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
         'cache_url_root': config.get('ckanext-archiver.cache_url_root'),
         'previous': Archival.get_for_resource(resource_id)
     }
+    error = {'args': ''}
     try:
         download_result = download(context, resource)
-        e = {'args': ''}
     except NotChanged as e:
+        error = e
         download_status_id = Status.by_text('Content has not changed')
         try_as_api = False
         requires_archive = False
     except LinkInvalidError as e:
+        error = e
         download_status_id = Status.by_text('URL invalid')
         try_as_api = False
     except (DownloadException, DownloadError) as e:
+        error = e
         download_status_id = Status.by_text('Download error')
         try_as_api = True
     except ChooseNotToDownload as e:
+        error = e
         download_status_id = Status.by_text('Chose not to download')
         try_as_api = False
     except Exception as e:
@@ -365,7 +369,7 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
 
     if not Status.is_ok(download_status_id):
         log.info('GET error: %s - %r, %r "%s"',
-                 Status.by_id(download_status_id), e, e.args,
+                 Status.by_id(download_status_id), error, error.args,
                  resource.get('url'))
 
         if try_as_api:
@@ -376,8 +380,8 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
             # from the previous download (i.e. not when we tried it as an API)
 
         if not try_as_api or not Status.is_ok(download_status_id):
-            extra_args = [e.url_redirected_to] if 'url_redirected_to' in e else []
-            _save(download_status_id, e, resource, *extra_args)
+            extra_args = [error.url_redirected_to] if 'url_redirected_to' in error else []
+            _save(download_status_id, error, resource, *extra_args)
             return
 
     if not requires_archive:
