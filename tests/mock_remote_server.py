@@ -11,6 +11,13 @@ import six
 import socket
 import os
 
+try:
+    # Python 2
+    from httplib import responses
+except ImportError:
+    # Python 3
+    from http.client import responses
+
 
 class MockHTTPServer(object):
     """
@@ -109,7 +116,6 @@ class MockEchoTestServer(MockHTTPServer):
 
     def __call__(self, environ, start_response):
 
-        from httplib import responses
         from webob import Request
         request = Request(environ)
         status = int(request.str_params.get('status', '200'))
@@ -184,7 +190,6 @@ class MockWmsServer(MockHTTPServer):
         super(MockWmsServer, self).__init__()
 
     def __call__(self, environ, start_response):
-        from httplib import responses
         from webob import Request
         request = Request(environ)
         status = int(request.str_params.get('status', '200'))
@@ -220,7 +225,6 @@ class MockWfsServer(MockHTTPServer):
         super(MockWfsServer, self).__init__()
 
     def __call__(self, environ, start_response):
-        from httplib import responses
         from webob import Request
         request = Request(environ)
         status = int(request.str_params.get('status', '200'))
