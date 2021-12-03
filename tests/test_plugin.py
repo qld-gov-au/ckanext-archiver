@@ -97,10 +97,10 @@ class TestPlugin():
 
     def test_upload_resource_unchanged(self):
         pkg = self._test_package(name="test-archiver-upload", url_type="upload")
-        pkg.resources[0].url = pkg.resources[0].url + '-updated'
+        resource = pkg.resources[0]
         log.debug("Testing package with unchanged upload contents [%s]", pkg)
 
         with mock.patch('ckanext.archiver.lib.create_archiver_package_task') as create_task:
             # add a placeholder modification so the activity stream gets updated
-            ckan_helpers.call_action('package_patch', id=pkg.id)
+            ckan_helpers.call_action('resource_patch', id=resource.id)
             create_task.assert_not_called()
