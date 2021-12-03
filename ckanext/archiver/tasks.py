@@ -943,6 +943,7 @@ def response_is_an_api_error(response_body):
     '''Some APIs return errors as the response body, but HTTP status 200. So we
     need to check response bodies for these error messages.
     '''
+    log.debug("Checking %s for API errors", response_body)
     response_sample = response_body[:250]  # to allow for <?xml> and <!DOCTYPE> lines
 
     # WMS spec
