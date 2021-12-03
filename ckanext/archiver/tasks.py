@@ -858,20 +858,8 @@ def requests_wrapper(log, func, *args, **kwargs):
     runs:
         res = requests.get(url, timeout=url_timeout)
     '''
-    from requests_ssl import SSLv3Adapter
     try:
-        try:
-            response = func(*args, **kwargs)
-        except requests.exceptions.ConnectionError as e:
-            if 'SSL23_GET_SERVER_HELLO' not in six.text_type(e):
-                raise
-            log.info('SSLv23 failed so trying again using SSLv3: %r', args)
-            requests_session = requests.Session()
-            requests_session.mount('https://', SSLv3Adapter())
-            func = {requests.get: requests_session.get,
-                    requests.post: requests_session.post}[func]
-            response = func(*args, **kwargs)
-
+        response = func(*args, **kwargs)
     except requests.exceptions.ConnectionError as e:
         raise DownloadException(_('Connection error: %s') % e)
     except requests.exceptions.HTTPError as e:
