@@ -139,9 +139,6 @@ class MockEchoTestServer(MockHTTPServer):
             content = ''
             status = 405
 
-        if isinstance(content, six.text_type):
-            raise TypeError("Expected raw byte string for content")
-
         headers = [
             item
             for item in request.params.items()
