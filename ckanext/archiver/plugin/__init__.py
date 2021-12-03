@@ -68,7 +68,7 @@ class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetFor
 
         # Since 'revisions' is a deprecated feature in CKAN,
         # try to use activity stream to check if dataset changed
-        context = {'model': model, 'session': model.Session, 'ignore_auth': True}
+        context = {'model': model, 'session': model.Session, 'ignore_auth': True, 'user': None}
         if p.toolkit.check_ckan_version(min_version='2.8.0'):
             data_dict = {'id': package.id, 'limit': 2}
 
