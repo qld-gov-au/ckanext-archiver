@@ -712,14 +712,15 @@ def tidy_url(url):
 
     # Find out if it has unicode characters, and if it does, quote them
     # so we are left with an ascii string
-    try:
-        url = url.decode('ascii')
-    except Exception:
-        parts = list(urlparse.urlparse(url))
-        parts[2] = urllib.quote(parts[2].encode('utf-8'))
-        parts[1] = urllib.quote(parts[1].encode('utf-8'))
-        url = urlparse.urlunparse(parts)
-    url = six.binary_type(url)
+    if isinstance(url, six.binary_type):
+        try:
+            url = url.decode('ascii')
+        except Exception:
+            parts = list(urlparse.urlparse(url))
+            parts[2] = urllib.quote(parts[2].encode('utf-8'))
+            parts[1] = urllib.quote(parts[1].encode('utf-8'))
+            url = urlparse.urlunparse(parts)
+    url = six.text_type(url)
 
     # strip whitespace from url
     # (browsers appear to do this)
