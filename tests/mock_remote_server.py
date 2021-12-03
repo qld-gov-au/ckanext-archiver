@@ -102,9 +102,9 @@ class MockHTTPServer(object):
         mod = six.moves.reduce(getattr, modpath.split('.')[1:], __import__(modpath))
         var = six.moves.reduce(getattr, var.split('.'), mod)
         try:
-            return six.binary_type(var())
+            return six.ensure_binary(var())
         except TypeError:
-            return six.binary_type(var)
+            return six.ensure_binary(var)
 
 
 class MockEchoTestServer(MockHTTPServer):
@@ -149,8 +149,7 @@ class MockEchoTestServer(MockHTTPServer):
             content = ''
             status = 405
 
-        if isinstance(content, six.text_type):
-            content = six.binary_type(content)
+        content = six.ensure_binary(content)
 
         headers = [
             item
@@ -161,7 +160,7 @@ class MockEchoTestServer(MockHTTPServer):
             cl = _get_str_params(request).get('length')
             headers += [('Content-Length', cl)]
         elif content and 'no-content-length' not in _get_str_params(request):
-            headers += [('Content-Length', six.binary_type(len(content)))]
+            headers += [('Content-Length', six.ensure_binary(len(content)))]
         start_response(
             '%d %s' % (status, responses[status]),
             headers
