@@ -149,6 +149,9 @@ class MockEchoTestServer(MockHTTPServer):
             content = ''
             status = 405
 
+        if isinstance(content, six.text_type):
+            content = six.binary_type(content)
+
         headers = [
             item
             for item in _get_str_params(request).items()
