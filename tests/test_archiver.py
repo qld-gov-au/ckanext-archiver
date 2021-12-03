@@ -229,7 +229,7 @@ class TestArchiver():
         result = self._get_update_resource_json(res_id)
         assert result['size'] == len('test')
         from hashlib import sha1
-        assert result['hash'] == sha1('test').hexdigest(), result
+        assert result['hash'] == sha1(b'test').hexdigest(), result
         _remove_archived_file(result.get('cache_filepath'))
 
     @with_mock_url('?status=200&content=test&content-type=csv')
