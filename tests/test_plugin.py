@@ -76,31 +76,31 @@ class TestPlugin():
         model.repo.commit()
         return pkg
 
-    def test_package_unchanged(self):
+    @mock.patch('ckanext.archiver.lib.create_archiver_package_task')
+    def test_package_unchanged(self, create_task=None):
         pkg = self._test_package()
         log.debug("Testing unchanged package [%s]", pkg)
 
-        with mock.patch('ckanext.archiver.lib.create_archiver_package_task') as create_task:
-            # add a placeholder modification so the activity stream gets updated
-            ckan_helpers.call_action('package_patch', id=pkg.id)
-            create_task.assert_not_called()
+        # add a placeholder modification so the activity stream gets updated
+        ckan_helpers.call_action('package_patch', id=pkg.id)
+        create_task.assert_not_called()
 
-    def test_link_resource_changed(self):
+    @mock.patch('ckanext.archiver.lib.create_archiver_package_task')
+    def test_link_resource_changed(self, create_task=None):
         pkg = self._test_package()
         resource = pkg.resources[0]
         log.debug("Testing altered package [%s]", pkg)
 
-        with mock.patch('ckanext.archiver.lib.create_archiver_package_task') as create_task:
-            # add a placeholder modification so the activity stream gets updated
-            ckan_helpers.call_action('resource_patch', id=resource.id, url=resource.url + '-updated')
-            create_task.assert_called_with(pkg, 'priority')
+        # add a placeholder modification so the activity stream gets updated
+        ckan_helpers.call_action('resource_patch', id=resource.id, url=resource.url + '-updated')
+        create_task.assert_called_with(pkg, 'priority')
 
-    def test_upload_resource_unchanged(self):
+    @mock.patch('ckanext.archiver.lib.create_archiver_package_task')
+    def test_upload_resource_unchanged(self, create_task=None):
         pkg = self._test_package(name="test-archiver-upload", url_type="upload")
         resource = pkg.resources[0]
         log.debug("Testing package with unchanged upload contents [%s]", pkg)
 
-        with mock.patch('ckanext.archiver.lib.create_archiver_package_task') as create_task:
-            # add a placeholder modification so the activity stream gets updated
-            ckan_helpers.call_action('resource_patch', id=resource.id)
-            create_task.assert_not_called()
+        # add a placeholder modification so the activity stream gets updated
+        ckan_helpers.call_action('resource_patch', id=resource.id)
+        create_task.assert_not_called()
