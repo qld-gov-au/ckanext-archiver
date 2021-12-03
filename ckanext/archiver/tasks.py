@@ -509,7 +509,6 @@ def download(context, resource, url_timeout=30,
 
     # continue the download - stream the response body
     def get_content():
-        log.debug("Retrieving content from %s", res)
         return six.ensure_binary(res.content)
     log.info('Downloading the body')
     content = requests_wrapper(log, get_content)
@@ -944,7 +943,6 @@ def response_is_an_api_error(response_body):
     '''Some APIs return errors as the response body, but HTTP status 200. So we
     need to check response bodies for these error messages.
     '''
-    log.debug("Checking %s for API errors", response_body)
     response_sample = six.text_type(response_body[:250])  # to allow for <?xml> and <!DOCTYPE> lines
 
     # WMS spec

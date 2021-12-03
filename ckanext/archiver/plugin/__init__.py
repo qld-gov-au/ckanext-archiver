@@ -73,7 +73,6 @@ class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetFor
             data_dict = {'id': package.id, 'limit': 2}
 
             activity_list = p.toolkit.get_action('package_activity_list')(context, data_dict)
-            log.debug('Activity stream for [%s] is [%s]', data_dict, activity_list)
             if len(activity_list) <= 1:
                 log.warn('No sign of previous package - will archive anyway')
                 return True
