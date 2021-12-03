@@ -59,8 +59,7 @@ def with_mock_url(url=''):
         @wraps(func)
         def decorated(*args, **kwargs):
             with MockEchoTestServer().serve() as serveraddr:
-                kwargs[u'url'] = '%s/%s' % (serveraddr, url)
-                return func(*args, **kwargs)
+                return func(*(args + ('%s/%s' % (serveraddr, url),)), **kwargs)
         return decorated
     return decorator
 
@@ -366,20 +365,20 @@ class TestArchiver():
 
     @unittest.skipIf(plugins.toolkit.check_ckan_version(min_version='2.7.0'), '2.7 has deprecated celery')
     @with_mock_url('?status=200&content=test&content-type=csv')
-    def test_package_archived_when_resource_modified(self, url=None):
-        with mock.patch('ckan.lib.celery_app.celery.send_task') as mock_send_task:
-            data_dict = self._test_resource(url)
-            data_dict['url'] = 'http://example.com/foo'
-            context = {'model': model,
-                       'user': 'test',
-                       'ignore_auth': True,
-                       'session': model.Session}
-            get_action('resource_update')(context, data_dict)
+    @mock.patch('ckan.lib.celery_app.celery.send_task')
+    def test_package_archived_when_resource_modified(self, url=None, send_task=None):
+        data_dict = self._test_resource(url)
+        data_dict['url'] = 'http://example.com/foo'
+        context = {'model': model,
+                   'user': 'test',
+                   'ignore_auth': True,
+                   'session': model.Session}
+        get_action('resource_update')(context, data_dict)
 
-            assert_equal(mock_send_task.called, True)
+        assert_equal(send_task.called, True)
 
-            args, kwargs = mock_send_task.call_args
-            assert args == ('archiver.update_package',)
+        args, kwargs = send_task.call_args
+        assert args == ('archiver.update_package',)
 
     @with_mock_url('?status=200&content=test&content-type=csv')
     def test_ipipe_notified_dataset(self, url=None):
