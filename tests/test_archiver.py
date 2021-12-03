@@ -406,7 +406,7 @@ class TestArchiver():
 
     def _get_update_resource_json(self, id):
         result = update_resource(None, id)
-        assert result, "update_resource returned: " + result
+        assert result, "update_resource returned: {}".format(result)
         return json.loads(result)
 
 
