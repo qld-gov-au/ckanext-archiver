@@ -149,8 +149,6 @@ class MockEchoTestServer(MockHTTPServer):
             content = ''
             status = 405
 
-        content = six.ensure_binary(content)
-
         headers = [
             item
             for item in _get_str_params(request).items()
@@ -165,7 +163,7 @@ class MockEchoTestServer(MockHTTPServer):
             '%d %s' % (status, responses[status]),
             headers
         )
-        return [content]
+        return [six.ensure_binary(content)]
 
 
 class MockTimeoutTestServer(MockHTTPServer):
@@ -224,7 +222,7 @@ class MockWmsServer(MockHTTPServer):
             '%d %s' % (status, responses[status]),
             headers.items()
         )
-        return [content]
+        return [six.ensure_binary(content)]
 
 
 class MockWfsServer(MockHTTPServer):
@@ -252,7 +250,7 @@ class MockWfsServer(MockHTTPServer):
             '%d %s' % (status, responses[status]),
             headers.items()
         )
-        return [content]
+        return [six.ensure_binary(content)]
 
 
 ERROR_WRONG_SERVICE = "<ows:ExceptionReport version='1.1.0' language='en'" \
