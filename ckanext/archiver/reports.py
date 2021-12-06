@@ -1,4 +1,7 @@
+# encoding: utf-8
+
 import copy
+import json
 try:
     from collections import OrderedDict  # from python 2.7
 except ImportError:
@@ -180,9 +183,20 @@ def broken_links_for_organization(organization, include_sub_organizations=False)
                 .filter_by(id=resource.id)\
                 .filter_by(revision_timestamp=archival.resource_timestamp)\
                 .first() or resource
+            archived_url = archived_resource.url
         except AttributeError:
-            # CKAN 2.9 doesn't have revisions, TODO check if activity stream can help
-            archived_resource = resource
+            # CKAN 2.9 doesn't have revisions, use activity stream
+            archival_activity = model.Session.query(model.ActivityDetail)\
+                .join(model.Activity)\
+                .filter(model.ActivityDetail.object_id == resource.id)\
+                .filter(model.ActivityDetail.activity_type == 'updated')\
+                .filter(model.Activity.timestamp == archival.resource_timestamp)\
+                .with_entities(model.ActivityDetail.data)\
+                .first()
+            if archival_activity:
+                archived_url = json.loads(archival_activity[0][0])['url']
+            else:
+                archived_url = resource.url
         row_data = OrderedDict((
             ('dataset_title', pkg.title),
             ('dataset_name', pkg.name),
@@ -191,8 +205,8 @@ def broken_links_for_organization(organization, include_sub_organizations=False)
             ('organization_name', org.name),
             ('resource_position', resource.position),
             ('resource_id', resource.id),
-            ('resource_url', archived_resource.url),
-            ('url_up_to_date', resource.url == archived_resource.url),
+            ('resource_url', archived_url),
+            ('url_up_to_date', resource.url == archived_url),
             ('via', via),
             ('first_failure', archival.first_failure.isoformat() if archival.first_failure else None),
             ('last_updated', archival.updated.isoformat() if archival.updated else None),
