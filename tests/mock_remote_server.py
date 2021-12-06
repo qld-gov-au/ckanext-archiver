@@ -6,10 +6,27 @@ from contextlib import contextmanager
 from threading import Thread
 from time import sleep
 from wsgiref.simple_server import make_server
-import urllib2
+from six.moves.urllib import parse as urllib2
 import six
 import socket
 import os
+
+try:
+    # Python 2
+    from httplib import responses
+except ImportError:
+    # Python 3
+    from http.client import responses
+
+
+def _get_str_params(request):
+    """ Get parameters from the request. If 'str_params' is available,
+    use that, otherwise just use 'params'.
+    """
+    if hasattr(request, 'str_params'):
+        return request.str_params
+    else:
+        return request.params
 
 
 class MockHTTPServer(object):
@@ -85,9 +102,9 @@ class MockHTTPServer(object):
         mod = six.moves.reduce(getattr, modpath.split('.')[1:], __import__(modpath))
         var = six.moves.reduce(getattr, var.split('.'), mod)
         try:
-            return var()
+            return six.ensure_binary(var())
         except TypeError:
-            return var
+            return six.ensure_binary(var)
 
 
 class MockEchoTestServer(MockHTTPServer):
@@ -109,48 +126,47 @@ class MockEchoTestServer(MockHTTPServer):
 
     def __call__(self, environ, start_response):
 
-        from httplib import responses
         from webob import Request
         request = Request(environ)
-        status = int(request.str_params.get('status', '200'))
-        # if 'redirect' in redirect.str_params:
-        #     params = dict([(key, value) for param in request.str_params \
+        status = int(_get_str_params(request).get('status', '200'))
+        # if 'redirect' in redirect.params:
+        #     params = dict([(key, value) for param in _get_str_params(request) \
         #                    if key != 'redirect'])
-        #     redirect_status = int(request.str_params['redirect'])
-        #     status = int(request.str_params.get('status', '200'))
+        #     redirect_status = int(_get_str_params(request)['redirect'])
+        #     status = int(_get_str_params(request).get('status', '200'))
         #     resp = make_response(render_template('error.html'), redirect_status)
         #     resp.headers['Location'] = url_for(request.path, params)
         #     return resp
-        if 'content_var' in request.str_params:
-            content = request.str_params.get('content_var')
+        if 'content_var' in _get_str_params(request):
+            content = _get_str_params(request).get('content_var')
             content = self.get_content(content)
-        elif 'content_long' in request.str_params:
+        elif 'content_long' in _get_str_params(request):
             content = '*' * 1000001
         else:
-            content = request.str_params.get('content', '')
-        if 'method' in request.str_params \
-                and request.method.lower() != request.str_params['method'].lower():
+            content = _get_str_params(request).get('content', '')
+        if 'method' in _get_str_params(request) \
+                and request.method.lower() != _get_str_params(request)['method'].lower():
             content = ''
             status = 405
 
-        if isinstance(content, six.text_type):
-            raise TypeError("Expected raw byte string for content")
-
         headers = [
             item
-            for item in request.str_params.items()
+            for item in _get_str_params(request).items()
             if item[0] not in ('content', 'status')
         ]
-        if 'length' in request.str_params:
-            cl = request.str_params.get('length')
+        if 'length' in _get_str_params(request):
+            cl = _get_str_params(request).get('length')
             headers += [('Content-Length', cl)]
-        elif content and 'no-content-length' not in request.str_params:
-            headers += [('Content-Length', six.binary_type(len(content)))]
+        elif content and 'no-content-length' not in _get_str_params(request):
+            # Python 2 with old WebOb wants bytes,
+            # Python 3 with new WebOb wants text,
+            # so both want 'str'
+            headers += [('Content-Length', str(len(content)))]
         start_response(
             '%d %s' % (status, responses[status]),
             headers
         )
-        return [content]
+        return [six.ensure_binary(content)]
 
 
 class MockTimeoutTestServer(MockHTTPServer):
@@ -184,20 +200,19 @@ class MockWmsServer(MockHTTPServer):
         super(MockWmsServer, self).__init__()
 
     def __call__(self, environ, start_response):
-        from httplib import responses
         from webob import Request
         request = Request(environ)
-        status = int(request.str_params.get('status', '200'))
-        headers = {'Content-Type': 'text/plain'}
+        status = int(_get_str_params(request).get('status', '200'))
+        headers = [('Content-Type', 'text/plain')]
         # e.g. params ?service=WMS&request=GetCapabilities&version=1.1.1
-        if request.str_params.get('service') != 'WMS':
+        if _get_str_params(request).get('service') != 'WMS':
             status = 200
             content = ERROR_WRONG_SERVICE
-        elif request.str_params.get('request') != 'GetCapabilities':
+        elif _get_str_params(request).get('request') != 'GetCapabilities':
             status = 405
             content = '"request" param wrong'
-        elif 'version' in request.str_params and \
-                request.str_params.get('version') != self.wms_version:
+        elif 'version' in _get_str_params(request) and \
+                _get_str_params(request).get('version') != self.wms_version:
             status = 405
             content = '"version" not compatible - need to be %s' % self.wms_version
         elif self.wms_version == '1.1.1':
@@ -208,9 +223,9 @@ class MockWmsServer(MockHTTPServer):
             content = get_file_content('wms_getcap_1.3.xml')
         start_response(
             '%d %s' % (status, responses[status]),
-            headers.items()
+            headers
         )
-        return [content]
+        return [six.ensure_binary(content)]
 
 
 class MockWfsServer(MockHTTPServer):
@@ -220,16 +235,15 @@ class MockWfsServer(MockHTTPServer):
         super(MockWfsServer, self).__init__()
 
     def __call__(self, environ, start_response):
-        from httplib import responses
         from webob import Request
         request = Request(environ)
-        status = int(request.str_params.get('status', '200'))
-        headers = {'Content-Type': 'text/plain'}
+        status = int(_get_str_params(request).get('status', '200'))
+        headers = [('Content-Type', 'text/plain')]
         # e.g. params ?service=WFS&request=GetCapabilities
-        if request.str_params.get('service') != 'WFS':
+        if _get_str_params(request).get('service') != 'WFS':
             status = 200
             content = ERROR_WRONG_SERVICE
-        elif request.str_params.get('request') != 'GetCapabilities':
+        elif _get_str_params(request).get('request') != 'GetCapabilities':
             status = 405
             content = '"request" param wrong'
         else:
@@ -237,9 +251,9 @@ class MockWfsServer(MockHTTPServer):
             content = get_file_content('wfs_getcap.xml')
         start_response(
             '%d %s' % (status, responses[status]),
-            headers.items()
+            headers
         )
-        return [content]
+        return [six.ensure_binary(content)]
 
 
 ERROR_WRONG_SERVICE = "<ows:ExceptionReport version='1.1.0' language='en'" \

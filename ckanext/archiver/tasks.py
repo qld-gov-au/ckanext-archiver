@@ -1,18 +1,19 @@
-import os
-import hashlib
-import httplib
-import requests
-import json
-import urllib
-import urlparse
-import tempfile
-import shutil
-import datetime
+# encoding: utf-8
+
 import copy
+import datetime
+import hashlib
+import json
 import mimetypes
-import six
+import os
+import requests
 import routes
+import shutil
+from six.moves.urllib import parse as urlparse
+import six
+import tempfile
 import time
+import urllib
 
 from requests.packages import urllib3
 
@@ -58,32 +59,14 @@ if toolkit.check_ckan_version(max_version='2.6.99'):
 
 
 def load_config(ckan_ini_filepath):
-    import paste.deploy
-    config_abs_path = os.path.abspath(ckan_ini_filepath)
-    conf = paste.deploy.appconfig('config:' + config_abs_path)
-    import ckan
-    ckan.config.environment.load_environment(conf.global_conf,
-                                             conf.local_conf)
+    if ckan_ini_filepath:
+        toolkit.load_config(ckan_ini_filepath)
 
     # give routes enough information to run url_for
-    parsed = urlparse.urlparse(conf.get('ckan.site_url', 'http://0.0.0.0'))
+    parsed = urlparse.urlparse(config.get('ckan.site_url', 'http://0.0.0.0'))
     request_config = routes.request_config()
     request_config.host = parsed.netloc + parsed.path
     request_config.protocol = parsed.scheme
-
-
-def register_translator():
-    # Register a translator in this thread so that
-    # the _() functions in logic layer can work
-    from paste.registry import Registry
-    from pylons import translator
-    from ckan.lib.cli import MockTranslator
-    global registry
-    registry = Registry()
-    registry.prepare()
-    global translator_obj
-    translator_obj = MockTranslator()
-    registry.register(translator, translator_obj)
 
 
 class ArchiverError(Exception):
@@ -145,7 +128,6 @@ def update_resource(ckan_ini_filepath, resource_id, queue='bulk'):
     Archive a resource.
     '''
     load_config(ckan_ini_filepath)
-    register_translator()
 
     log.info('Starting update_resource task: res_id=%r queue=%s', resource_id, queue)
 
@@ -172,7 +154,6 @@ def update_package(ckan_ini_filepath, package_id, queue='bulk'):
     Archive a package.
     '''
     load_config(ckan_ini_filepath)
-    register_translator()
 
     log.info('Starting update_package task: package_id=%r queue=%s',
              package_id, queue)
@@ -359,20 +340,24 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
         'cache_url_root': config.get('ckanext-archiver.cache_url_root'),
         'previous': Archival.get_for_resource(resource_id)
     }
+    error = {'args': ''}
     try:
         download_result = download(context, resource)
-        e = {'args': ''}
     except NotChanged as e:
+        error = e
         download_status_id = Status.by_text('Content has not changed')
         try_as_api = False
         requires_archive = False
     except LinkInvalidError as e:
+        error = e
         download_status_id = Status.by_text('URL invalid')
         try_as_api = False
     except (DownloadException, DownloadError) as e:
+        error = e
         download_status_id = Status.by_text('Download error')
         try_as_api = True
     except ChooseNotToDownload as e:
+        error = e
         download_status_id = Status.by_text('Chose not to download')
         try_as_api = False
     except Exception as e:
@@ -384,7 +369,7 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
 
     if not Status.is_ok(download_status_id):
         log.info('GET error: %s - %r, %r "%s"',
-                 Status.by_id(download_status_id), e, e.args,
+                 Status.by_id(download_status_id), error, error.args,
                  resource.get('url'))
 
         if try_as_api:
@@ -395,8 +380,8 @@ def _update_resource(ckan_ini_filepath, resource_id, queue, log):
             # from the previous download (i.e. not when we tried it as an API)
 
         if not try_as_api or not Status.is_ok(download_status_id):
-            extra_args = [e.url_redirected_to] if 'url_redirected_to' in e else []
-            _save(download_status_id, e, resource, *extra_args)
+            extra_args = [error.url_redirected_to] if hasattr(error, 'url_redirected_to') else []
+            _save(download_status_id, error, resource, *extra_args)
             return
 
     if not requires_archive:
@@ -524,7 +509,7 @@ def download(context, resource, url_timeout=30,
 
     # continue the download - stream the response body
     def get_content():
-        return res.content
+        return six.ensure_binary(res.content)
     log.info('Downloading the body')
     content = requests_wrapper(log, get_content)
 
@@ -615,6 +600,7 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
         file_name = parsed_url.path.split('/')[-1] or 'resource'
         file_name = file_name.strip()  # trailing spaces cause problems
         file_name = file_name.encode('ascii', 'ignore')  # e.g. u'\xa3' signs
+        file_name = six.text_type(file_name)
     except Exception:
         file_name = "resource"
 
@@ -731,14 +717,15 @@ def tidy_url(url):
 
     # Find out if it has unicode characters, and if it does, quote them
     # so we are left with an ascii string
-    try:
-        url = url.decode('ascii')
-    except Exception:
-        parts = list(urlparse.urlparse(url))
-        parts[2] = urllib.quote(parts[2].encode('utf-8'))
-        parts[1] = urllib.quote(parts[1].encode('utf-8'))
-        url = urlparse.urlunparse(parts)
-    url = six.binary_type(url)
+    if isinstance(url, six.binary_type):
+        try:
+            url = url.decode('ascii')
+        except Exception:
+            parts = list(urlparse.urlparse(url))
+            parts[2] = urllib.quote(parts[2].encode('utf-8'))
+            parts[1] = urllib.quote(parts[1].encode('utf-8'))
+            url = urlparse.urlunparse(parts)
+    url = six.text_type(url)
 
     # strip whitespace from url
     # (browsers appear to do this)
@@ -872,20 +859,8 @@ def requests_wrapper(log, func, *args, **kwargs):
     runs:
         res = requests.get(url, timeout=url_timeout)
     '''
-    from requests_ssl import SSLv3Adapter
     try:
-        try:
-            response = func(*args, **kwargs)
-        except requests.exceptions.ConnectionError as e:
-            if 'SSL23_GET_SERVER_HELLO' not in six.text_type(e):
-                raise
-            log.info('SSLv23 failed so trying again using SSLv3: %r', args)
-            requests_session = requests.Session()
-            requests_session.mount('https://', SSLv3Adapter())
-            func = {requests.get: requests_session.get,
-                    requests.post: requests_session.post}[func]
-            response = func(*args, **kwargs)
-
+        response = func(*args, **kwargs)
     except requests.exceptions.ConnectionError as e:
         raise DownloadException(_('Connection error: %s') % e)
     except requests.exceptions.HTTPError as e:
@@ -968,7 +943,7 @@ def response_is_an_api_error(response_body):
     '''Some APIs return errors as the response body, but HTTP status 200. So we
     need to check response bodies for these error messages.
     '''
-    response_sample = response_body[:250]  # to allow for <?xml> and <!DOCTYPE> lines
+    response_sample = six.text_type(response_body[:250])  # to allow for <?xml> and <!DOCTYPE> lines
 
     # WMS spec
     # e.g. https://map.bgs.ac.uk/ArcGIS/services/BGS_Detailed_Geology/MapServer/WMSServer?service=abc
@@ -1021,7 +996,7 @@ def link_checker(context, data):
     try:
         res = requests.head(url, timeout=url_timeout)
         headers = res.headers
-    except httplib.InvalidURL as ve:
+    except requests.exceptions.InvalidURL as ve:
         log.error("Could not make a head request to %r, error is: %s."
                   " Package is: %r. This sometimes happens when using an old version of requests on a URL"
                   " which issues a 301 redirect. Version=%s", url, ve, data.get('package'), requests.__version__)

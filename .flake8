@@ -4,6 +4,7 @@
 exclude =
     ckan
     scripts
+    .git
 
 # Extended output format.
 format = pylint
@@ -17,5 +18,4 @@ max-line-length = 127
 # List ignore rules one per line.
 ignore =
     C901
-    F841  # ignoring this is bad but necessary
     W503

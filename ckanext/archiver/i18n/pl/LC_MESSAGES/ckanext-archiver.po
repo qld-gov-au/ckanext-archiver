@@ -187,6 +187,9 @@ msgstr "Zbiory z błędnymi linkami"
 msgid "% Broken links"
 msgstr "% błędnych linków"
 
+msgid "Percent broken"
+msgstr "% błędnych linków"
+
 #: ckanext/archiver/templates/report/broken_links.html:45
 msgid "Index/position of the resource in the dataset"
 msgstr "Pozycja zasobu w zbiorze"

@@ -1,8 +1,6 @@
 ---
-#based on https://raw.githubusercontent.com/ckan/ckanext-scheming/master/.github/workflows/test.yml
-# alternative https://github.com/ckan/ckan/blob/master/contrib/cookiecutter/ckan_extension/%7B%7Bcookiecutter.project%7D%7D/.github/workflows/test.yml
 name: Tests
-on: [push]
+on: [push, pull_request]
 env:
   CKAN_SQLALCHEMY_URL: postgresql://ckan_default:pass@postgres/ckan_test
   CKAN_DATASTORE_WRITE_URL: postgresql://datastore_write:pass@postgres/datastore_test
@@ -29,12 +27,8 @@ jobs:
     needs: lint
     strategy:
       matrix:
-        # Not ready for 2.9 yet
-        # ckan-version: [2.9, 2.9-py2, 2.8]
-        ckan-version: [2.8]
+        ckan-version: [2.9, 2.9-py2, 2.8, 2.7]
         env:
-          - { REPORT_GIT_REPO: "datagovuk", REPORT_BRANCH: "master" }
-          - { REPORT_GIT_REPO: "qld-gov-au", REPORT_BRANCH: "0.1" }
           - { REPORT_GIT_REPO: "qld-gov-au", REPORT_BRANCH: "develop" }
       fail-fast: false
 
@@ -93,17 +87,14 @@ jobs:
       - name: Setup extension (CKAN >= 2.9)
         if: ${{ matrix.ckan-version != '2.7' && matrix.ckan-version != '2.8' }}
         run: |
+          pip install factory-boy==2.12.0
           ckan -c test.ini db init
-  #        ckan -c test.ini datastore set-permissions | sudo -u postgres psql -p $PG_PORT
+          ckan -c test.ini archiver init
       - name: Setup extension (CKAN < 2.9)
         if: ${{ matrix.ckan-version == '2.7' || matrix.ckan-version == '2.8' }}
         run: |
           paster --plugin=ckan db init -c test.ini
-  #        paster datastore set-permissions -c test-core.ini | sudo -u postgres psql -p $PG_PORT
+          paster --plugin=ckanext-archiver archiver init -c test.ini
 
-      - name: Run tests (CKAN >= 2.9)
-        if: ${{ matrix.ckan-version != '2.7' && matrix.ckan-version != '2.8' }}
+      - name: Run tests
         run: pytest --ckan-ini=test.ini --cov=ckanext.archiver --disable-warnings tests
-      - name: Run tests (CKAN < 2.9)
-        if: ${{ matrix.ckan-version == '2.7' || matrix.ckan-version == '2.8' }}
-        run: nosetests --nologcapture --with-pylons=test.ini --with-coverage --cover-package=ckanext.archiver --cover-inclusive --cover-erase --cover-tests
