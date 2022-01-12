@@ -11,7 +11,7 @@ class MixinPlugin(p.SingletonPlugin):
     # IRoutes
 
     def before_map(self, map):
-        with SubMapper(map, controller='ckanext.archiver.controller:ArchiverController') as m:
+        with SubMapper(map, controller='ckanext.archiver.controller.pylons_controller:ArchiverController') as m:
             # Override the resource download links
             m.connect('archive_download',
                       '/dataset/{id}/resource/{resource_id}/archive',
