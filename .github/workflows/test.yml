@@ -1,6 +1,11 @@
 ---
 name: Tests
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+    branches:
+      - master
+
 env:
   CKAN_SQLALCHEMY_URL: postgresql://ckan_default:pass@postgres/ckan_test
   CKAN_DATASTORE_WRITE_URL: postgresql://datastore_write:pass@postgres/datastore_test
