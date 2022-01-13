@@ -7,7 +7,6 @@ import json
 import mimetypes
 import os
 import requests
-import routes
 import shutil
 from six.moves.urllib import parse as urlparse
 import six
