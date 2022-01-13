@@ -111,7 +111,7 @@ class CkanError(ArchiverError):
     pass
 
 
-def update_resource(resource_id, queue='bulk'):
+def update_resource(ckan_ini_filepath=None, resource_id=None, queue='bulk'):
     '''
     Archive a resource.
     '''
@@ -135,7 +135,7 @@ def update_resource(resource_id, queue='bulk'):
         raise
 
 
-def update_package(package_id, queue='bulk'):
+def update_package(ckan_ini_filepath=None, package_id=None, queue='bulk'):
     '''
     Archive a package.
     '''

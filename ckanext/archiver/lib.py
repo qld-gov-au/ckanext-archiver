@@ -10,7 +10,7 @@ from ckanext.archiver.tasks import update_package, update_resource
 log = logging.getLogger(__name__)
 
 
-def compat_enqueue(name, fn, queue, args=None):
+def compat_enqueue(name, fn, queue, args=None, kwargs=None):
     u'''
     Enqueue a background job using Celery or RQ.
     '''
@@ -18,7 +18,7 @@ def compat_enqueue(name, fn, queue, args=None):
         # Try to use RQ
         from ckan.plugins.toolkit import enqueue_job
         nice_name = name + " " + args[1] if (len(args) >= 2) else name
-        enqueue_job(fn, args=args, queue=queue, title=nice_name)
+        enqueue_job(fn, args=args, kwargs=kwargs, queue=queue, title=nice_name)
     except ImportError:
         # Fallback to Celery
         import uuid
@@ -33,14 +33,14 @@ def create_archiver_resource_task(resource, queue):
     else:
         package = resource.package
 
-    compat_enqueue('archiver.update_resource', update_resource, queue, [resource.id])
+    compat_enqueue('archiver.update_resource', update_resource, queue, None, {'resource_id': resource.id})
 
     log.debug('Archival of resource put into queue %s: %s/%s url=%r',
               queue, package.name, resource.id, resource.url)
 
 
 def create_archiver_package_task(package, queue):
-    compat_enqueue('archiver.update_package', update_package, queue, [package.id])
+    compat_enqueue('archiver.update_package', update_package, queue, None, {'package_id': package.id})
 
     log.debug('Archival of package put into queue %s: %s',
               queue, package.name)
