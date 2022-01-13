@@ -1,11 +1,9 @@
 # encoding: utf-8
 
 import logging
-import os
 import six
 
 import ckan.plugins as p
-from ckan.plugins.toolkit import config
 
 from ckanext.archiver.tasks import update_package, update_resource
 
@@ -33,18 +31,15 @@ def create_archiver_resource_task(resource, queue):
         package = resource.resource_group.package
     else:
         package = resource.package
-    ckan_ini_filepath = os.path.abspath(config['__file__'])
 
-    compat_enqueue('archiver.update_resource', update_resource, queue, [ckan_ini_filepath, resource.id])
+    compat_enqueue('archiver.update_resource', update_resource, queue, [resource.id])
 
     log.debug('Archival of resource put into queue %s: %s/%s url=%r',
               queue, package.name, resource.id, resource.url)
 
 
 def create_archiver_package_task(package, queue):
-    ckan_ini_filepath = os.path.abspath(config['__file__'])
-
-    compat_enqueue('archiver.update_package', update_package, queue, [ckan_ini_filepath, package.id])
+    compat_enqueue('archiver.update_package', update_package, queue, [package.id])
 
     log.debug('Archival of package put into queue %s: %s',
               queue, package.name)

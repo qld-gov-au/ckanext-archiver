@@ -111,7 +111,7 @@ class CkanError(ArchiverError):
     pass
 
 
-def update_resource(ckan_ini_filepath, resource_id, queue='bulk'):
+def update_resource(resource_id, queue='bulk'):
     '''
     Archive a resource.
     '''
@@ -124,7 +124,7 @@ def update_resource(ckan_ini_filepath, resource_id, queue='bulk'):
     # Also put try/except around it is easier to monitor ckan's log rather than
     # celery's task status.
     try:
-        result = _update_resource(ckan_ini_filepath, resource_id, queue, log)
+        result = _update_resource(resource_id, queue, log)
         return result
     except Exception as e:
         if os.environ.get('DEBUG'):
@@ -135,7 +135,7 @@ def update_resource(ckan_ini_filepath, resource_id, queue='bulk'):
         raise
 
 
-def update_package(ckan_ini_filepath, package_id, queue='bulk'):
+def update_package(package_id, queue='bulk'):
     '''
     Archive a package.
     '''
@@ -146,7 +146,7 @@ def update_package(ckan_ini_filepath, package_id, queue='bulk'):
     # Also put try/except around it is easier to monitor ckan's log rather than
     # celery's task status.
     try:
-        _update_package(ckan_ini_filepath, package_id, queue, log)
+        _update_package(package_id, queue, log)
     except Exception as e:
         if os.environ.get('DEBUG'):
             raise
@@ -157,7 +157,7 @@ def update_package(ckan_ini_filepath, package_id, queue='bulk'):
         raise
 
 
-def _update_package(ckan_ini_filepath, package_id, queue, log):
+def _update_package(package_id, queue, log):
     from ckan import model
 
     get_action = toolkit.get_action
@@ -168,7 +168,7 @@ def _update_package(ckan_ini_filepath, package_id, queue, log):
 
     for resource in package['resources']:
         resource_id = resource['id']
-        res = _update_resource(ckan_ini_filepath, resource_id, queue, log)
+        res = _update_resource(resource_id, queue, log)
         if res:
             num_archived += 1
 
@@ -201,7 +201,7 @@ def _update_search_index(package_id, log):
     log.info('Search indexed %s', package['name'])
 
 
-def _update_resource(ckan_ini_filepath, resource_id, queue, log):
+def _update_resource(resource_id, queue, log):
     """
     Link check and archive the given resource.
     If successful, updates the archival table with the cache_url & hash etc.
