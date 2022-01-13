@@ -20,7 +20,7 @@ def archive_download(id, resource_id, filename=None):
     try:
         resource = toolkit.get_action('resource_show')(context, {'id': resource_id})
         # Quick auth check to ensure you can access this resource
-        toolkit.check_access('package_show')(context, {'id': id})
+        toolkit.check_access('package_show', context, {'id': id})
     except (toolkit.ObjectNotFound, toolkit.NotAuthorized):
         toolkit.abort(404, _('Resource not found'))
 
