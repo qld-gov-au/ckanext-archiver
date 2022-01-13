@@ -56,8 +56,6 @@ class ArchivalCommands():
 
     def update_test(self, dataset_spec, queue=None):
         from ckanext.archiver import tasks
-        # Prevent it loading config again
-        tasks.load_config = lambda x: None
         log = logging.getLogger('ckanext.archiver')
         for pkg_or_res, is_pkg, num_resources_for_pkg, pkg_for_res in \
                 self._get_packages_and_resources_in_args(dataset_spec):
