@@ -10,7 +10,7 @@ from ckanext.archiver.tasks import update_package, update_resource
 log = logging.getLogger(__name__)
 
 
-def compat_enqueue(name, fn, queue, args=None, kwargs=None):
+def compat_enqueue(name, fn, queue, args=[], kwargs={}):
     u'''
     Enqueue a background job using Celery or RQ.
     '''
@@ -33,14 +33,14 @@ def create_archiver_resource_task(resource, queue):
     else:
         package = resource.package
 
-    compat_enqueue('archiver.update_resource', update_resource, queue, None, {'resource_id': resource.id})
+    compat_enqueue('archiver.update_resource', update_resource, queue, kwargs={'resource_id': resource.id})
 
     log.debug('Archival of resource put into queue %s: %s/%s url=%r',
               queue, package.name, resource.id, resource.url)
 
 
 def create_archiver_package_task(package, queue):
-    compat_enqueue('archiver.update_package', update_package, queue, None, {'package_id': package.id})
+    compat_enqueue('archiver.update_package', update_package, queue, kwargs={'package_id': package.id})
 
     log.debug('Archival of package put into queue %s: %s',
               queue, package.name)
