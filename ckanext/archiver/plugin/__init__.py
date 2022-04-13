@@ -102,7 +102,7 @@ class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetFor
             try:
                 old_pkg_dict = p.toolkit.get_action('package_show')(
                     context, data_dict)
-            except p.toolkit.NotFound:
+            except p.toolkit.ObjectNotFound:
                 log.warn('No sign of previous package - will archive anyway')
                 return True
 
