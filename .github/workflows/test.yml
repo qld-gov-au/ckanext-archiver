@@ -6,18 +6,11 @@ on:
     branches:
       - master
 
-env:
-  CKAN_SQLALCHEMY_URL: postgresql://ckan_default:pass@postgres/ckan_test
-  CKAN_DATASTORE_WRITE_URL: postgresql://datastore_write:pass@postgres/datastore_test
-  CKAN_DATASTORE_READ_URL: postgresql://datastore_read:pass@postgres/datastore_test
-  CKAN_SOLR_URL: http://solr:8983/solr/ckan
-  CKAN_REDIS_URL: redis://redis:6379/1
-
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: actions/setup-python@v2
         with:
           python-version: '3.6'
@@ -32,18 +25,18 @@ jobs:
     needs: lint
     strategy:
       matrix:
-        ckan-version: [2.9, 2.9-py2, 2.8, 2.7]
+        ckan-version: ["2.10", 2.9, 2.9-py2, 2.8, 2.7]
         env:
           - { REPORT_GIT_REPO: "qld-gov-au", REPORT_BRANCH: "develop" }
       fail-fast: false
 
     name: CKAN ${{ matrix.ckan-version }}
-    runs-on: ubuntu-18.04
+    runs-on: ubuntu-latest
     container:
       image: openknowledge/ckan-dev:${{ matrix.ckan-version }}
     services:
       solr:
-        image: ckan/ckan-solr-dev:${{ matrix.ckan-version }}
+        image: ckan/ckan-solr:${{ matrix.ckan-version }}
       postgres:
         image: ckan/ckan-postgres-dev:${{ matrix.ckan-version }}
         env:
@@ -53,10 +46,15 @@ jobs:
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
       redis:
         image: redis:3
-    env: ${{ matrix.env }}
+    env:
+      CKAN_SQLALCHEMY_URL: postgresql://ckan_default:pass@postgres/ckan_test
+      CKAN_DATASTORE_WRITE_URL: postgresql://datastore_write:pass@postgres/datastore_test
+      CKAN_DATASTORE_READ_URL: postgresql://datastore_read:pass@postgres/datastore_test
+      CKAN_SOLR_URL: http://solr:8983/solr/ckan
+      CKAN_REDIS_URL: redis://redis:6379/1
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         timeout-minutes: 2
 
       - name: Install report and archiver plugins
@@ -82,17 +80,14 @@ jobs:
 
       - name: Install requirements
         run: |
-          pip install -r dev-requirements.txt
-          pip install -r pip-requirements.txt
           pip install -r requirements.txt
+          pip install -r dev-requirements.txt
           pip install -e .
           # Replace default path to CKAN core config file with the one on the container
           sed -i -e 's/use = config:.*/use = config:\/srv\/app\/src\/ckan\/test-core.ini/' test.ini
-
       - name: Setup extension (CKAN >= 2.9)
         if: ${{ matrix.ckan-version != '2.7' && matrix.ckan-version != '2.8' }}
         run: |
-          pip install factory-boy==2.12.0
           ckan -c test.ini db init
           ckan -c test.ini archiver init
       - name: Setup extension (CKAN < 2.9)
@@ -100,6 +95,5 @@ jobs:
         run: |
           paster --plugin=ckan db init -c test.ini
           paster --plugin=ckanext-archiver archiver init -c test.ini
-
       - name: Run tests
-        run: pytest --ckan-ini=test.ini --cov=ckanext.archiver --disable-warnings tests
+        run: pytest --ckan-ini=test.ini --cov=ckanext.archiver --disable-warnings ckanext/archiver/tests

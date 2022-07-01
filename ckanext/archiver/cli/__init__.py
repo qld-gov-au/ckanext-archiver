@@ -2,12 +2,14 @@
 
 import itertools
 import logging
+from time import sleep
+
 import os
 import re
 import sys
 import shutil
 import six
-import time
+from sqlalchemy import func
 
 import ckan.plugins as p
 from ckan.lib import uploader
@@ -17,7 +19,6 @@ try:
     from collections import OrderedDict  # from python 2.7
 except ImportError:
     from sqlalchemy.util import OrderedDict
-from sqlalchemy.sql import func
 
 toolkit = p.toolkit
 REQUESTS_HEADER = {'content-type': 'application/json'}
@@ -44,14 +45,14 @@ class ArchivalCommands():
                 log.info('Queuing dataset %s (%s resources)',
                          package.name, num_resources_for_pkg)
                 lib.create_archiver_package_task(package, self.queue)
-                time.sleep(0.1)  # to try to avoid Redis getting overloaded
+                sleep(0.1)  # to try to avoid Redis getting overloaded
             else:
                 resource = pkg_or_res
                 package = pkg_for_res
                 log.info('Queuing resource %s/%s',
                          package.name, resource.id)
                 lib.create_archiver_resource_task(resource, self.queue)
-                time.sleep(0.05)  # to try to avoid Redis getting overloaded
+                sleep(0.05)  # to try to avoid Redis getting overloaded
         log.info('Completed queueing')
 
     def update_test(self, dataset_spec, queue=None):

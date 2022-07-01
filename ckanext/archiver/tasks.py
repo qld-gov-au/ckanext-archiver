@@ -1,33 +1,35 @@
 # encoding: utf-8
 
-import copy
-import datetime
-import hashlib
-import json
-import mimetypes
 import os
+import hashlib
+import http.client
 import requests
-import shutil
-from six.moves.urllib import parse as urlparse
-import six
+import json
 import tempfile
-import time
+import shutil
+import datetime
+import copy
+import mimetypes
+from time import sleep
+import six
 import urllib
 
 from requests.packages import urllib3
+from six.moves.urllib.parse import urlparse, urljoin, quote, urlunparse
 
-from ckan import plugins as p
 from ckan.common import _
 from ckan.lib import uploader
 from ckan.lib.uploader import ResourceUpload as DefaultResourceUpload
+from ckan import plugins as p
 from ckanext.archiver import interfaces as archiver_interfaces
 from ckanext.archiver import default_settings as settings
 
 import logging
 
+log = logging.getLogger(__name__)
+
 toolkit = p.toolkit
 config = toolkit.config
-log = logging.getLogger(__name__)
 
 ALLOWED_SCHEMES = set(('http', 'https', 'ftp'))
 
@@ -37,7 +39,7 @@ USER_AGENT = 'ckanext-archiver'
 uploaderHasDownloadEnabled = hasattr(DefaultResourceUpload, "download")
 
 # CKAN 2.7 introduces new jobs system
-if toolkit.check_ckan_version(max_version='2.6.99'):
+if p.toolkit.check_ckan_version(max_version='2.6.99'):
     from ckan.lib.celery_app import celery
 
     @celery.task(name="archiver.update_resource")
@@ -111,14 +113,15 @@ class CkanError(ArchiverError):
     pass
 
 
-def update_resource(ckan_ini_filepath=None, resource_id=None, queue='bulk'):
+def update_resource(resource_id=None, queue='bulk'):
     '''
     Archive a resource.
     '''
+
     log.info('Starting update_resource task: res_id=%r queue=%s', resource_id, queue)
 
     # HACK because of race condition #1481
-    time.sleep(2)
+    sleep(2)
 
     # Do all work in a sub-routine since it can then be tested without celery.
     # Also put try/except around it is easier to monitor ckan's log rather than
@@ -135,10 +138,11 @@ def update_resource(ckan_ini_filepath=None, resource_id=None, queue='bulk'):
         raise
 
 
-def update_package(ckan_ini_filepath=None, package_id=None, queue='bulk'):
+def update_package(package_id=None, queue='bulk'):
     '''
     Archive a package.
     '''
+
     log.info('Starting update_package task: package_id=%r queue=%s',
              package_id, queue)
 
@@ -223,6 +227,7 @@ def _update_resource(resource_id, queue, log):
         }
     If not successful, returns None.
     """
+
     from ckan import model
     from ckanext.archiver.model import Status, Archival
 
@@ -259,7 +264,7 @@ def _update_resource(resource_id, queue, log):
         upload = uploader.get_resource_uploader(resource)
         filepath = upload.get_path(resource['id'])
 
-        hosted_externally = not url.startswith(config['ckan.site_url']) or urlparse.urlparse(filepath).scheme != ''
+        hosted_externally = not url.startswith(config['ckan.site_url']) or urlparse(filepath).scheme != ''
         # if resource.get('resource_type') == 'file.upload' and not hosted_externally:
         if not hosted_externally:
             log.info("Won't attempt to archive resource uploaded locally: %s", resource['url'])
@@ -322,26 +327,26 @@ def _update_resource(resource_id, queue, log):
         'cache_url_root': config.get('ckanext-archiver.cache_url_root'),
         'previous': Archival.get_for_resource(resource_id)
     }
-    error = {'args': ''}
+
+    err = None
     try:
         download_result = download(context, resource)
     except NotChanged as e:
-        error = e
         download_status_id = Status.by_text('Content has not changed')
         try_as_api = False
         requires_archive = False
+        err = e
     except LinkInvalidError as e:
-        error = e
         download_status_id = Status.by_text('URL invalid')
         try_as_api = False
+        err = e
     except (DownloadException, DownloadError) as e:
-        error = e
         download_status_id = Status.by_text('Download error')
         try_as_api = True
     except ChooseNotToDownload as e:
-        error = e
         download_status_id = Status.by_text('Chose not to download')
         try_as_api = False
+        err = e
     except Exception as e:
         if os.environ.get('DEBUG'):
             raise
@@ -349,9 +354,9 @@ def _update_resource(resource_id, queue, log):
         _save(Status.by_text('Download failure'), e, resource)
         return
 
-    if not Status.is_ok(download_status_id):
+    if not Status.is_ok(download_status_id) and err:
         log.info('GET error: %s - %r, %r "%s"',
-                 Status.by_id(download_status_id), error, error.args,
+                 Status.by_id(download_status_id), err, err.args,
                  resource.get('url'))
 
         if try_as_api:
@@ -362,8 +367,8 @@ def _update_resource(resource_id, queue, log):
             # from the previous download (i.e. not when we tried it as an API)
 
         if not try_as_api or not Status.is_ok(download_status_id):
-            extra_args = [error.url_redirected_to] if hasattr(error, 'url_redirected_to') else []
-            _save(download_status_id, error, resource, *extra_args)
+            extra_args = [err.args.url_redirected_to] if 'url_redirected_to' in err.args else []
+            _save(download_status_id, err, resource, *extra_args)
             return
 
     if not requires_archive:
@@ -577,7 +582,7 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
         if not os.path.exists(archive_dir):
             os.makedirs(archive_dir)
     # try to get a file name from the url
-    parsed_url = urlparse.urlparse(resource.get('url'))
+    parsed_url = urlparse(resource.get('url'))
     try:
         file_name = parsed_url.path.split('/')[-1] or 'resource'
         file_name = file_name.strip()  # trailing spaces cause problems
@@ -604,7 +609,7 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
         except OSError:
             pass
 
-        cache_url = urlparse.urljoin(config.get('ckan.site_url', ''),
+        cache_url = urljoin(config.get('ckan.site_url', ''),
                                      "/dataset/{0}/resource/{1}/archive/{2}".format(
                                          resource['package_id'], resource['id'], file_name))
         responsePayload = {
@@ -632,7 +637,7 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
             log.warning('Not saved cache_url because no value for '
                         'ckanext-archiver.cache_url_root in config')
             raise ArchiveError(_('No value for ckanext-archiver.cache_url_root in config'))
-        cache_url = urlparse.urljoin(context['cache_url_root'],
+        cache_url = urljoin(context['cache_url_root'],
                                      '%s/%s' % (relative_archive_path, file_name))
         return {'cache_filepath': saved_file,
                 'cache_url': cache_url}
@@ -682,7 +687,6 @@ def _set_user_agent_string(headers):
     Update the passed headers object with a `User-Agent` key, if there is a
     USER_AGENT_STRING option in settings.
     '''
-
     ua_str = settings.USER_AGENT_STRING
     if ua_str is not None:
         headers['User-Agent'] = ua_str
@@ -703,10 +707,10 @@ def tidy_url(url):
         try:
             url = url.decode('ascii')
         except Exception:
-            parts = list(urlparse.urlparse(url))
-            parts[2] = urllib.quote(parts[2].encode('utf-8'))
-            parts[1] = urllib.quote(parts[1].encode('utf-8'))
-            url = urlparse.urlunparse(parts)
+            parts = list(urlparse(url))
+            parts[2] = quote(parts[2].encode('utf-8'))
+            parts[1] = quote(parts[1].encode('utf-8'))
+            url = urlunparse(parts)
     url = six.text_type(url)
 
     # strip whitespace from url
@@ -978,7 +982,7 @@ def link_checker(context, data):
     try:
         res = requests.head(url, timeout=url_timeout)
         headers = res.headers
-    except requests.exceptions.InvalidURL as ve:
+    except http.client.InvalidURL as ve:
         log.error("Could not make a head request to %r, error is: %s."
                   " Package is: %r. This sometimes happens when using an old version of requests on a URL"
                   " which issues a 301 redirect. Version=%s", url, ve, data.get('package'), requests.__version__)

@@ -1,12 +1,12 @@
 # encoding: utf-8
 
 from functools import wraps
-import json
 import logging
 import os
 import shutil
 from six.moves.urllib.parse import quote_plus
 import tempfile
+import json
 import unittest
 try:
     from unittest import mock
@@ -64,7 +64,7 @@ def with_mock_url(url=''):
     return decorator
 
 
-class TestLinkChecker():
+class TestLinkChecker:
     """
     Tests for link checker task
     """

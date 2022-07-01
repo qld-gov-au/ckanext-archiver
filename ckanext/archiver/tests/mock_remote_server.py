@@ -10,6 +10,7 @@ from six.moves.urllib import parse as urllib2
 import six
 import socket
 import os
+from six.moves import reduce
 
 try:
     # Python 2
@@ -38,7 +39,7 @@ class MockHTTPServer(object):
     a separate thread, eg::
 
         >>> with MockTestServer().serve() as server_address:
-        ...     urllib2.urlopen(server_address)
+        ...     urlopen(server_address)
         ...
 
     Subclass this and override __call__ to provide your own WSGI handler function.
@@ -56,7 +57,7 @@ class MockHTTPServer(object):
         This uses context manager to make sure the server is stopped::
 
             >>> with MockTestServer().serve() as addr:
-            ...     print(urllib2.urlopen('%s/?content=hello+world').read())
+            ...     print urlopen('%s/?content=hello+world').read()
             ...
             'hello world'
         """
@@ -87,7 +88,7 @@ class MockHTTPServer(object):
             # call completes. Set a very small timeout as we don't actually need to
             # wait for a response. We don't care about exceptions here either.
             try:
-                urllib2.urlopen("http://%s:%s/" % (host, port), timeout=0.01)
+                urlopen("http://%s:%s/" % (host, port), timeout=0.01)
             except Exception:
                 pass
 
@@ -99,8 +100,8 @@ class MockHTTPServer(object):
         called and its return value used.
         """
         modpath, var = varspec.split(':')
-        mod = six.moves.reduce(getattr, modpath.split('.')[1:], __import__(modpath))
-        var = six.moves.reduce(getattr, var.split('.'), mod)
+        mod = reduce(getattr, modpath.split('.')[1:], __import__(modpath))
+        var = reduce(getattr, var.split('.'), mod)
         try:
             return six.ensure_binary(var())
         except TypeError:
@@ -151,7 +152,7 @@ class MockEchoTestServer(MockHTTPServer):
 
         headers = [
             item
-            for item in _get_str_params(request).items()
+            for item in six.iteritems(_get_str_params(request))
             if item[0] not in ('content', 'status')
         ]
         if 'length' in _get_str_params(request):

@@ -34,6 +34,7 @@ print(package_stats.report())
 
 import copy
 import datetime
+import six
 
 
 class StatsCount(dict):
@@ -64,13 +65,13 @@ class StatsCount(dict):
         lines = []
         indent_str = '\t' * indent
         report_dict = dict()
-        for category in self.keys():
+        for category in six.iterkeys(self):
             report_dict[category] = self.report_value(category)
 
         if order_by_title:
-            items = sorted(report_dict.iteritems())
+            items = sorted(six.iteritems(report_dict))
         else:
-            items = sorted(report_dict.iteritems(),
+            items = sorted(six.iteritems(report_dict),
                            key=lambda x: -x[1][1])
 
         for category, value_tuple in items:
