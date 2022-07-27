@@ -22,7 +22,7 @@ def archive_download(id, resource_id, filename=None):
         # Quick auth check to ensure you can access this resource
         toolkit.check_access('package_show', context, {'id': id})
     except (toolkit.ObjectNotFound, toolkit.NotAuthorized):
-        toolkit.abort(404, _('Resource not found'))
+        return toolkit.abort(404, _('Resource not found'))
 
     # Archived files are only links not uploads
     if resource.get('url_type') != 'upload':
@@ -50,5 +50,5 @@ def archive_download(id, resource_id, filename=None):
             return upload.download(file_name)
         except OSError:
             # includes FileNotFoundError
-            toolkit.abort(404, _('Resource data not found'))
-    toolkit.abort(404, _('No download is available'))
+            return toolkit.abort(404, _('Resource data not found'))
+    return toolkit.abort(404, _('No download is available'))
