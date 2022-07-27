@@ -1,4 +1,5 @@
-celery==3.1.25
+# Install Celery if you are running CKAN 2.6 or less
+#celery==3.1.25
 kombu==3.0.37
 progressbar2==3.55.0
 #SQLAlchemy>=0.6.6
