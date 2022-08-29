@@ -345,14 +345,14 @@ class ArchivalCommands():
 
         q = "select column_name from INFORMATION_SCHEMA.COLUMNS where table_name = 'archival';"
         current_cols = list([m[0] for m in model.Session.execute(q)])
-        for k, v in MIGRATIONS_ADD.iteritems():
+        for k, v in six.iteritems(MIGRATIONS_ADD):
             if k not in current_cols:
                 log.info(u"Adding column '{0}'".format(k))
                 log.info(u"Executing '{0}'".format(v))
                 model.Session.execute(v)
                 model.Session.commit()
 
-        for k, v in MIGRATIONS_MODIFY.iteritems():
+        for k, v in six.iteritems(MIGRATIONS_MODIFY):
             if k in current_cols:
                 log.info(u"Removing column '{0}'".format(k))
                 log.info(u"Executing '{0}'".format(v))
