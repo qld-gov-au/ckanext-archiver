@@ -38,19 +38,19 @@ class ArchivalCommands():
         '''
         from ckanext.archiver import lib
         for pkg_or_res, is_pkg, num_resources_for_pkg, pkg_for_res in \
-                self._get_packages_and_resources_in_args(dataset_spec):
+                self._get_packages_and_resources_in_args(dataset_spec, queue):
             if is_pkg:
                 package = pkg_or_res
                 log.info('Queuing dataset %s (%s resources)',
                          package.name, num_resources_for_pkg)
-                lib.create_archiver_package_task(package, self.queue)
+                lib.create_archiver_package_task(package, queue)
                 time.sleep(0.1)  # to try to avoid Redis getting overloaded
             else:
                 resource = pkg_or_res
                 package = pkg_for_res
                 log.info('Queuing resource %s/%s',
                          package.name, resource.id)
-                lib.create_archiver_resource_task(resource, self.queue)
+                lib.create_archiver_resource_task(resource, queue)
                 time.sleep(0.05)  # to try to avoid Redis getting overloaded
         log.info('Completed queueing')
 
@@ -58,21 +58,21 @@ class ArchivalCommands():
         from ckanext.archiver import tasks
         log = logging.getLogger('ckanext.archiver')
         for pkg_or_res, is_pkg, num_resources_for_pkg, pkg_for_res in \
-                self._get_packages_and_resources_in_args(dataset_spec):
+                self._get_packages_and_resources_in_args(dataset_spec, queue):
             if is_pkg:
                 package = pkg_or_res
                 log.info('Archiving dataset %s (%s resources)',
                          package.name, num_resources_for_pkg)
-                tasks._update_package(package.id, self.queue, log)
+                tasks._update_package(package.id, queue, log)
             else:
                 resource = pkg_or_res
                 package = pkg_for_res
                 log.info('Archiving resource %s/%s',
                          package.name, resource.id)
-                tasks._update_resource(resource.id, self.queue, log)
+                tasks._update_resource(resource.id, queue, log)
         log.info('Completed test update')
 
-    def _get_packages_and_resources_in_args(self, ids):
+    def _get_packages_and_resources_in_args(self, ids, queue):
         '''Given command-line arguments that specify one or more datasets or
         resources, it generates a list of those packages & resources with some
         basic properties.
@@ -102,22 +102,22 @@ class ArchivalCommands():
                                  .filter_by(owner_org=group.id))
                     else:
                         packages.extend(group.packages(with_private=True))
-                    if not self.queue:
-                        self.queue = 'bulk'
+                    if not queue:
+                        queue = 'bulk'
                     continue
                 # try arg as a package id/name
                 pkg = model.Package.get(object_id)
                 if pkg:
                     packages.append(pkg)
-                    if not self.queue:
-                        self.queue = 'priority'
+                    if not queue:
+                        queue = 'priority'
                     continue
                 # try arg as a resource id
                 res = model.Resource.get(object_id)
                 if res:
                     resources.append(res)
-                    if not self.queue:
-                        self.queue = 'priority'
+                    if not queue:
+                        queue = 'priority'
                     continue
                 else:
                     log.error('Could not recognize as a group, package '
@@ -129,8 +129,8 @@ class ArchivalCommands():
                         .filter_by(state='active')\
                         .order_by('name').all()
             packages.extend(pkgs)
-            if not self.queue:
-                self.queue = 'bulk'
+            if not queue:
+                queue = 'bulk'
 
         if packages:
             log.info('Datasets to archive: %d', len(packages))
@@ -140,7 +140,7 @@ class ArchivalCommands():
             log.error('No datasets or resources to process')
             sys.exit(1)
 
-        log.info('Queue: %s', self.queue)
+        log.info('Queue: %s', queue)
         for package in packages:
             if p.toolkit.check_ckan_version(max_version='2.2.99'):
                 # earlier CKANs had ResourceGroup
@@ -345,14 +345,14 @@ class ArchivalCommands():
 
         q = "select column_name from INFORMATION_SCHEMA.COLUMNS where table_name = 'archival';"
         current_cols = list([m[0] for m in model.Session.execute(q)])
-        for k, v in MIGRATIONS_ADD.iteritems():
+        for k, v in six.iteritems(MIGRATIONS_ADD):
             if k not in current_cols:
                 log.info(u"Adding column '{0}'".format(k))
                 log.info(u"Executing '{0}'".format(v))
                 model.Session.execute(v)
                 model.Session.commit()
 
-        for k, v in MIGRATIONS_MODIFY.iteritems():
+        for k, v in six.iteritems(MIGRATIONS_MODIFY):
             if k in current_cols:
                 log.info(u"Removing column '{0}'".format(k))
                 log.info(u"Executing '{0}'".format(v))
