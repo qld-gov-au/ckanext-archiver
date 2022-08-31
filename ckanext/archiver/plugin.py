@@ -1,3 +1,5 @@
+# encoding: utf-8
+
 import logging
 
 from ckan import model
@@ -14,9 +16,9 @@ log = logging.getLogger(__name__)
 
 
 if p.toolkit.check_ckan_version("2.9"):
-    from ckanext.archiver.plugin.flask_plugin import MixinPlugin
+    from .plugin_mixins.flask_plugin import MixinPlugin
 else:
-    from ckanext.archiver.plugin.pylons_plugin import MixinPlugin
+    from .plugin_mixins.pylons_plugin import MixinPlugin
 
 
 class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
@@ -176,7 +178,7 @@ class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetFor
     # IConfigurer
 
     def update_config(self, config):
-        p.toolkit.add_template_directory(config, '../templates')
+        p.toolkit.add_template_directory(config, 'templates')
 
     # IActions
 
@@ -204,6 +206,10 @@ class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetFor
     # IPackageController
 
     def after_show(self, context, pkg_dict):
+        """ Old CKAN function name """
+        return self.after_dataset_show(context, pkg_dict)
+
+    def after_dataset_show(self, context, pkg_dict):
         # Insert the archival info into the package_dict so that it is
         # available on the API.
         # When you edit the dataset, these values will not show in the form,
@@ -213,9 +219,11 @@ class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetFor
         archivals = Archival.get_for_package(pkg_dict['id'])
         if not archivals:
             return
+
         # dataset
         dataset_archival = aggregate_archivals_for_a_dataset(archivals)
         pkg_dict['archiver'] = dataset_archival
+
         # resources
         archivals_by_res_id = dict((a.resource_id, a) for a in archivals)
         for res in pkg_dict['resources']:
@@ -226,6 +234,13 @@ class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetFor
                 del archival_dict['package_id']
                 del archival_dict['resource_id']
                 res['archiver'] = archival_dict
+
+    def before_dataset_index(self, pkg_dict):
+        '''
+        remove `archiver` from index
+        '''
+        pkg_dict.pop('archiver', None)
+        return pkg_dict
 
 
 class TestIPipePlugin(p.SingletonPlugin):

@@ -1,8 +1,7 @@
 # encoding: utf-8
 
 import ckan.plugins as p
-from ckanext.archiver.controller import blueprints
-from ckanext.archiver.cli import click_cli
+from ckanext.archiver import blueprints, cli
 
 
 class MixinPlugin(p.SingletonPlugin):
@@ -17,4 +16,4 @@ class MixinPlugin(p.SingletonPlugin):
     # IClick
 
     def get_commands(self):
-        return click_cli.get_commands()
+        return cli.get_commands()

@@ -124,7 +124,7 @@ class MockEchoTestServer(MockHTTPServer):
         from webob import Request
         request = Request(environ)
         status = int(_get_str_params(request).get('status', '200'))
-        # if 'redirect' in redirect.params:
+        # if 'redirect' in _get_str_params(redirect):
         #     params = dict([(key, value) for param in _get_str_params(request) \
         #                    if key != 'redirect'])
         #     redirect_status = int(_get_str_params(request)['redirect'])
