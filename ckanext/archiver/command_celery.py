@@ -1,8 +1,10 @@
+# encoding: utf-8
+
 import sys
 import os
 
 from pkg_resources import iter_entry_points, VersionConflict
-import ConfigParser
+import configparser
 from celery import Celery
 
 from ckan.lib.cli import CkanCommand
@@ -104,7 +106,7 @@ class CeleryCmd(CkanCommand):
     def _celery_app(self):
         # reread the ckan ini using ConfigParser so that we can get at the
         # non-pylons sections
-        config = ConfigParser.ConfigParser()
+        config = configparser.ConfigParser()
         config.read(self.options.config)
 
         celery_config = dict(
@@ -128,7 +130,7 @@ class CeleryCmd(CkanCommand):
             for key, value in config.items('app:celery'):
                 celery_config[key.upper()] = value.split() \
                     if key in LIST_PARAMS else value
-        except ConfigParser.NoSectionError:
+        except configparser.NoSectionError:
             error = 'Could not find celery config in your ckan ini file (a section headed "[app:celery]".'
             print(error)
             sys.exit(1)

@@ -68,9 +68,9 @@ class StatsCount(dict):
             report_dict[category] = self.report_value(category)
 
         if order_by_title:
-            items = sorted(report_dict.iteritems())
+            items = sorted(report_dict.items())
         else:
-            items = sorted(report_dict.iteritems(),
+            items = sorted(iter(report_dict.items()),
                            key=lambda x: -x[1][1])
 
         for category, value_tuple in items:

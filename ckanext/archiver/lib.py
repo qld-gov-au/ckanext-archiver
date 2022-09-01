@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 import logging
-import six
+from six import text_type as str
 
 import ckan.plugins as p
 
@@ -23,7 +23,7 @@ def compat_enqueue(name, fn, queue, args=[], kwargs={}):
         # Fallback to Celery
         import uuid
         from ckan.lib.celery_app import celery
-        celery.send_task(name, args=args + [queue], task_id=six.text_type(uuid.uuid4()))
+        celery.send_task(name, args=args + [queue], task_id=str(uuid.uuid4()))
 
 
 def create_archiver_resource_task(resource, queue):

@@ -4,12 +4,11 @@ import logging
 import sys
 
 from ckan.lib.cli import CkanCommand
-from ckanext.archiver.cli import ArchivalCommands
 
-REQUESTS_HEADER = {'content-type': 'application/json'}
+from . import utils
 
 
-class Archiver(CkanCommand, ArchivalCommands):
+class Archiver(CkanCommand):
     '''
     Download and save copies of all package resources.
 
@@ -105,18 +104,18 @@ class Archiver(CkanCommand, ArchivalCommands):
         self.log = logging.getLogger(__name__)
 
         if cmd == 'update':
-            self.update(self.args[1:], self.options.queue)
+            self.update()
         elif cmd == 'update-test':
-            self.update_test(self.args[1:], self.options.queue)
+            self.update_test()
         elif cmd == 'clean-status':
             self.clean_status()
         elif cmd == 'clean-cached-resources':
             self.clean_cached_resources()
         elif cmd == 'view':
             if len(self.args) == 2:
-                self.view(self.args[1])
+                utils.view(self.args[1])
             else:
-                self.view()
+                utils.view()
         elif cmd == 'report':
             if len(self.args) != 2:
                 self.log.error('Command requires a parameter, the name of the output')
@@ -128,7 +127,8 @@ class Archiver(CkanCommand, ArchivalCommands):
                 return
             self.report(self.args[1], delete=True)
         elif cmd == 'init':
-            self.initdb()
+            utils.initdb()
+            self.log.info('Archiver tables are initialized')
         elif cmd == 'migrate-archive-dirs':
             self.migrate_archive_dirs()
         elif cmd == 'migrate':
@@ -139,3 +139,32 @@ class Archiver(CkanCommand, ArchivalCommands):
             self.delete_files_larger_than_max_content_length()
         else:
             self.log.error('Command %s not recognized' % (cmd,))
+
+    def update(self):
+        utils.update(self.args[1:], self.options.queue)
+        self.log.info('Completed queueing')
+
+    def update_test(self):
+        utils.update_test(self.args[1:], self.options.queue)
+        self.log.info('Completed test update')
+
+    def clean_status(self):
+        utils.clean_status()
+
+    def clean_cached_resources(self):
+        utils.clean_cached_resources()
+
+    def report(self, output_file, delete=False):
+        utils.report(output_file, delete)
+
+    def migrate(self):
+        utils.migrate()
+
+    def migrate_archive_dirs(self):
+        utils.migrate_archive_dirs()
+
+    def size_report(self):
+        utils.size_report()
+
+    def delete_files_larger_than_max_content_length(self):
+        utils.delete_files_larger_than_max_content_length()
