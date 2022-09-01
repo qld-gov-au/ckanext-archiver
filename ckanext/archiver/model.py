@@ -1,15 +1,14 @@
 # encoding: utf-8
 
-import six
-import uuid
 from datetime import datetime
+from six import text_type as str
+import uuid
 
 from sqlalchemy import Column, MetaData
 from sqlalchemy import types
 from sqlalchemy.ext.declarative import declarative_base
 
 import ckan.model as model
-import ckan.plugins as p
 
 from ckan.lib import dictization
 
@@ -19,7 +18,7 @@ Base = declarative_base()
 
 
 def make_uuid():
-    return six.text_type(uuid.uuid4())
+    return str(uuid.uuid4())
 
 
 metadata = MetaData()
@@ -46,7 +45,7 @@ class Status:
             23: 'System error during archival',
         }
         self._by_text = dict((value, key)
-                             for key, value in six.iteritems(self._by_id))
+                             for key, value in self._by_id.items())
 
     @classmethod
     def instance(cls):
@@ -151,18 +150,9 @@ class Archival(Base):
     @classmethod
     def create(cls, resource_id):
         c = cls()
+        resource = model.Resource.get(resource_id)
         c.resource_id = resource_id
-
-        # Find the package_id for the resource.
-        dataset = model.Session.query(model.Package)
-        if p.toolkit.check_ckan_version(max_version='2.2.99'):
-            # earlier CKANs had ResourceGroup
-            dataset = dataset.join(model.ResourceGroup)
-        dataset = dataset \
-            .join(model.Resource) \
-            .filter_by(id=resource_id) \
-            .one()
-        c.package_id = dataset.id
+        c.package_id = resource.package_id
         return c
 
     @property

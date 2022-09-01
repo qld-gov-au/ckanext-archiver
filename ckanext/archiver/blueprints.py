@@ -2,7 +2,7 @@
 
 from flask import Blueprint
 
-from . import archive_download
+from .utils import archive_download
 
 
 archival = Blueprint(

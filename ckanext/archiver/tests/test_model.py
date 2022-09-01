@@ -1,15 +1,20 @@
-import ckanext.archiver.model as archiver_model
+# encoding: utf-8
+
+import pytest
+
 from ckan import model
 from ckan.tests import factories as ckan_factories
-from ckan.tests.helpers import reset_db
+
+import ckanext.archiver.model as archiver_model
 
 Archival = archiver_model.Archival
 
 
 class TestArchival(object):
-    @classmethod
-    def setup_class(cls):
-        reset_db()
+
+    @pytest.fixture(autouse=True)
+    @pytest.mark.usefixtures(u"clean_db")
+    def initial_data(self, clean_db):
         archiver_model.init_tables(model.meta.engine)
 
     def test_create(self):
