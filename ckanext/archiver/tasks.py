@@ -932,7 +932,11 @@ def response_is_an_api_error(response_body):
     '''Some APIs return errors as the response body, but HTTP status 200. So we
     need to check response bodies for these error messages.
     '''
-    response_sample = six.text_type(response_body[:250])  # to allow for <?xml> and <!DOCTYPE> lines
+    try:
+        response_sample = six.ensure_text(response_body[:250])  # to allow for <?xml> and <!DOCTYPE> lines
+    except UnicodeDecodeError:
+        # not a text response
+        return False
 
     # WMS spec
     # e.g. https://map.bgs.ac.uk/ArcGIS/services/BGS_Detailed_Geology/MapServer/WMSServer?service=abc
