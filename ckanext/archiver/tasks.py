@@ -593,7 +593,7 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
         from werkzeug.datastructures import FileStorage as FlaskFileStorage
         # we use the Upload class to push to our preferred filestorage solution
         toUpload = {"fileStorage": FlaskFileStorage(
-            filename=file_name, stream=open(result['saved_file']), content_type=result['mimetype']),
+            filename=file_name, stream=open(result['saved_file'], 'rb'), content_type=result['mimetype']),
             "preserve_filename": True}
         upload = uploader.get_uploader(save_file_folder)
         upload.update_data_dict(toUpload, 'url_field', 'fileStorage', 'clear_field')
