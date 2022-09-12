@@ -582,7 +582,7 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
         file_name = parsed_url.path.split('/')[-1] or 'resource'
         file_name = file_name.strip()  # trailing spaces cause problems
         file_name = file_name.encode('ascii', 'ignore')  # e.g. u'\xa3' signs
-        file_name = str(file_name)
+        file_name = six.ensure_text(file_name)
     except Exception:
         file_name = "resource"
 
@@ -593,7 +593,7 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
         from werkzeug.datastructures import FileStorage as FlaskFileStorage
         # we use the Upload class to push to our preferred filestorage solution
         toUpload = {"fileStorage": FlaskFileStorage(
-            filename=file_name, stream=open(result['saved_file']), content_type=result['mimetype']),
+            filename=file_name, stream=open(result['saved_file'], 'rb'), content_type=result['mimetype']),
             "preserve_filename": True}
         upload = uploader.get_uploader(save_file_folder)
         upload.update_data_dict(toUpload, 'url_field', 'fileStorage', 'clear_field')
@@ -604,9 +604,9 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
         except OSError:
             pass
 
-        cache_url = urlparse.urljoin(config.get('ckan.site_url', ''),
-                                     "/dataset/{0}/resource/{1}/archive/{2}".format(
-                                         resource['package_id'], resource['id'], file_name))
+        cache_url = urljoin(config.get('ckan.site_url', ''),
+                            "/dataset/{0}/resource/{1}/archive/{2}".format(
+                                resource['package_id'], resource['id'], file_name))
         responsePayload = {
             'cache_filepath': os.path.join(save_file_folder, file_name),
             'cache_url': cache_url
@@ -633,7 +633,7 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
                         'ckanext-archiver.cache_url_root in config')
             raise ArchiveError(_('No value for ckanext-archiver.cache_url_root in config'))
         cache_url = urljoin(str(context['cache_url_root']),
-                            '%s/%s' % (str(relative_archive_path), str(file_name)))
+                            '%s/%s' % (relative_archive_path, file_name))
         return {'cache_filepath': saved_file,
                 'cache_url': cache_url}
 
