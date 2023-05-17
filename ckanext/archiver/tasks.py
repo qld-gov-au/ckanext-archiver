@@ -12,6 +12,7 @@ import six
 from six import text_type as str
 from six.moves import http_client
 from six.moves.urllib.parse import urlparse, urljoin, quote, urlunparse
+import stat
 import tempfile
 from time import sleep
 
@@ -621,7 +622,7 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
         shutil.move(result['saved_file'], saved_file)
         log.info('Going to do chmod: %s', saved_file)
         try:
-            os.chmod(saved_file, 644)  # allow other users to read it
+            os.chmod(saved_file, stat.S_IRUSR | stat.S_IWUSR | stat.S_IRGRP | stat.S_IROTH)  # allow other users to read it
         except Exception as e:
             log.error('chmod failed %s: %s', saved_file, e)
             raise
