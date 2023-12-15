@@ -1,7 +1,6 @@
 # encoding: utf-8
 
 import copy
-import json
 try:
     from collections import OrderedDict  # from python 2.7
 except ImportError:
@@ -186,17 +185,15 @@ def broken_links_for_organization(organization, include_sub_organizations=False)
             archived_url = archived_resource.url
         except AttributeError:
             # CKAN 2.9 doesn't have revisions, use activity stream
-            archival_activity = model.Session.query(model.ActivityDetail)\
-                .join(model.Activity)\
-                .filter(model.ActivityDetail.object_id == resource.id)\
-                .filter(model.ActivityDetail.activity_type == 'updated')\
-                .filter(model.Activity.timestamp == archival.resource_timestamp)\
-                .with_entities(model.ActivityDetail.data)\
-                .first()
-            if archival_activity:
-                archived_url = json.loads(archival_activity[0][0])['url']
-            else:
-                archived_url = resource.url
+            archived_url = resource.url
+            pkg_activity_list = p.toolkit.get_action("package_activity_list")(
+                context={}, data_dict={"id": archival.package_id, "limit": 1}
+            )
+            if pkg_activity_list and "resources" in pkg_activity_list[0]["data"]["package"]:
+                for activity_resource in pkg_activity_list[0]["data"]["package"]["resources"]:
+                    if activity_resource["id"] == archival.resource_id:
+                        archived_url = activity_resource["url"]
+                        break
         row_data = OrderedDict((
             ('dataset_title', pkg.title),
             ('dataset_name', pkg.name),
