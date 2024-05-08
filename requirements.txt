@@ -6,4 +6,4 @@ progressbar2==3.55.0
 ckantoolkit>=0.0.4
 six>=1.12.0
 
--e git+https://github.com/qld-gov-au/ckanext-report.git@develop#egg=ckanext-report
+ckanext-report
