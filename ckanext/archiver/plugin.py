@@ -6,11 +6,11 @@ from ckan import model
 from ckan import plugins as p
 
 from ckanext.report.interfaces import IReport
-from ckanext.archiver.interfaces import IPipe
-from ckanext.archiver.logic import action, auth
-from ckanext.archiver import helpers
-from ckanext.archiver import lib
-from ckanext.archiver.model import Archival, aggregate_archivals_for_a_dataset
+from . import helpers, lib
+from .interfaces import IPipe
+from .logic import action, auth
+from .model import Archival, aggregate_archivals_for_a_dataset
+from .tasks import notify_package
 
 log = logging.getLogger(__name__)
 
@@ -43,12 +43,12 @@ class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetFor
 
         log.debug('Notified of package event: %s %s', entity.name, operation)
 
-        if not self._is_it_sufficient_change_to_run_archiver(entity, operation):
-            return
-
-        log.debug('Creating archiver task: %s', entity.name)
-
-        lib.create_archiver_package_task(entity, 'priority')
+        package_status = self._is_it_sufficient_change_to_run_archiver(entity, operation)
+        if package_status:
+            log.debug('Creating archiver task: %s', entity.name)
+            lib.create_archiver_package_task(entity, 'priority')
+        elif package_status is None:
+            notify_package({'id': entity.id})
 
     def _is_it_sufficient_change_to_run_archiver(self, package, operation):
         ''' Returns True if in this revision any of these happened:
@@ -56,6 +56,12 @@ class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetFor
         * dataset licence changed (affects qa)
         * there are resources that have been added or deleted
         * resources have changed their URL or format (affects qa)
+
+        Returns False if the dataset has been deleted, or contains only
+        unchanged links.
+
+        Returns None if the no changes were detected, but uploaded files are present.
+        This indicates that archival is not needed but downstream processes can still run.
         '''
         if operation == 'new':
             log.debug('New package - will archive')
@@ -136,6 +142,7 @@ class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetFor
             return True
 
         # have any resources' url/format changed?
+        contains_upload = False
         for res in package.resources:
             watched_keys = ['format']
             # Ignore URL changes in uploaded resources.
@@ -161,11 +168,17 @@ class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetFor
                 log.debug('Resource %s upload finished - will archive. ', 'upload_finished')
                 return True
 
+            if res.url_type == 'upload':
+                contains_upload = True
             log.debug('Resource unchanged. pos=%s id=%s',
                       res.position, res.id[:4])
 
-        log.debug('No new, deleted or changed resources - won\'t archive')
-        return False
+        if contains_upload:
+            log.debug("Unable to confirm new, deleted or changed resources - skip archive, but trigger downstream actions")
+            return None
+        else:
+            log.debug("No new, deleted or changed resources - do not archive")
+            return False
 
     # IReport
 

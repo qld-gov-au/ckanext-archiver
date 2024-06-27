@@ -650,7 +650,7 @@ def notify_resource(resource, queue, cache_filepath):
                                         cache_filepath=cache_filepath)
 
 
-def notify_package(package, queue):
+def notify_package(package, queue='bulk'):
     '''
     Broadcasts an IPipe notification that a package archival has taken place
     (or at least the archival object is changed somehow). e.g.
