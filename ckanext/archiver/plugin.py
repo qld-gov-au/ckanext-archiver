@@ -48,7 +48,7 @@ class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetFor
             log.debug('Creating archiver task: %s', entity.name)
             lib.create_archiver_package_task(entity, 'priority')
         elif package_status is None:
-            notify_package('package-archived')
+            notify_package({'id': entity.id})
 
     def _is_it_sufficient_change_to_run_archiver(self, package, operation):
         ''' Returns True if in this revision any of these happened:
