@@ -72,6 +72,10 @@ class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetFor
             return False
         # therefore operation=changed
 
+        # 2.9 does not have revisions so archive anyway
+        if p.toolkit.check_ckan_version(min_version='2.9.0'):
+            return True
+
         # check to see if resources are added, deleted or URL changed
 
         # Since 'revisions' is a deprecated feature in CKAN,
@@ -213,7 +217,7 @@ class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetFor
 
     def get_helpers(self):
         return dict((name, function) for name, function
-                    in helpers.__dict__.items()
+                    in list(helpers.__dict__.items())
                     if callable(function) and name[0] != '_')
 
     # IPackageController

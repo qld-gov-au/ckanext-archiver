@@ -31,6 +31,7 @@ print(package_stats.report())
 > not deleted: 70 spending-bristol, ...
 
 '''
+from __future__ import print_function
 
 import copy
 import datetime
@@ -64,7 +65,7 @@ class StatsCount(dict):
         lines = []
         indent_str = '\t' * indent
         report_dict = dict()
-        for category in self.keys():
+        for category in list(self.keys()):
             report_dict[category] = self.report_value(category)
 
         if order_by_title:

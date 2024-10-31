@@ -18,21 +18,6 @@ def archiver():
 
 
 @archiver.command()
-def init():
-    '''Creates the database table archiver needs to run.
-    '''
-    utils.initdb()
-    click.secho("Archiver tables are initialized", fg="green")
-
-
-@archiver.command()
-def migrate():
-    '''Updates the database schema to include new fields.
-    '''
-    utils.migrate()
-
-
-@archiver.command()
 @click.option('-q', '--queue', help='Send to a particular queue')
 @click.argument('identifiers', nargs=-1)
 def update(identifiers, queue=None):
@@ -40,6 +25,14 @@ def update(identifiers, queue=None):
     package or group, if specified
     '''
     utils.update(identifiers, queue)
+
+
+@archiver.command()
+def init():
+    '''Creates the database table archiver needs to run.
+    '''
+    utils.initdb()
+    click.secho("Archiver tables are initialized", fg="green")
 
 
 @archiver.command()
@@ -102,6 +95,13 @@ def delete_orphans(outputfile):
 
 
 @archiver.command()
+def migrate():
+    '''Updates the database schema to include new fields.
+    '''
+    utils.migrate()
+
+
+@archiver.command()
 def migrate_archive_dirs():
     '''Migrate the layout of the archived resource directories.
     Previous versions of ckanext-archiver stored resources on disk
@@ -121,7 +121,7 @@ def size_report():
 
 
 @archiver.command()
-def delete_files_larger_than_max():
+def delete_files_larger_than_max_content_length():
     '''For when you reduce the ckanext-archiver.max_content_length and
     want to delete archived files that are now above the threshold,
     and stop referring to these files in the Archival table of the db.

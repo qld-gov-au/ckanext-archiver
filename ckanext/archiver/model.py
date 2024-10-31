@@ -27,7 +27,7 @@ metadata = MetaData()
 # enum of all the archival statuses (singleton)
 # NB Be very careful changing these status strings. They are also used in
 # ckanext-qa tasks.py.
-class Status:
+class Status(object):
     _instance = None
 
     def __init__(self):

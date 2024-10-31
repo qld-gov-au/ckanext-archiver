@@ -707,7 +707,7 @@ def tidy_url(url):
             parts[2] = quote(parts[2].encode('utf-8'))
             parts[1] = quote(parts[1].encode('utf-8'))
             url = urlunparse(parts)
-    url = six.text_type(url)
+    url = str(url)
 
     # strip whitespace from url
     # (browsers appear to do this)
@@ -760,7 +760,7 @@ def _save_resource(resource, response, max_file_size, chunk_size=1024 * 16):
 
     os.close(fd)
 
-    content_hash = six.text_type(resource_hash.hexdigest())
+    content_hash = str(resource_hash.hexdigest())
     return length, content_hash, tmp_resource_file_path
 
 

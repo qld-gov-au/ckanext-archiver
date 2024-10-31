@@ -62,13 +62,12 @@ setup(
     # You can just specify the packages manually here if your project is
     # simple. Or you can use find_packages().
     packages=find_packages(exclude=['contrib', 'docs', 'tests*']),
-    namespace_packages=['ckanext'],
 
     install_requires=[
-        # CKAN extensions should not list dependencies here, but in a separate
-        # ``requirements.txt`` file.
-        #
-        # http://docs.ckan.org/en/latest/extensions/best-practices.html#add-third-party-libraries-to-requirements-txt
+      # CKAN extensions should not list dependencies here, but in a separate
+      # ``requirements.txt`` file.
+      #
+      # http://docs.ckan.org/en/latest/extensions/best-practices.html#add-third-party-libraries-to-requirements-txt
     ],
 
     # If there are data files included in your packages that need to be
@@ -113,5 +112,7 @@ setup(
             ('**.js', 'javascript', None),
             ('**/templates/**.html', 'ckan', None),
         ],
-    }
+    },
+
+    namespace_packages=['ckanext'],
 )
