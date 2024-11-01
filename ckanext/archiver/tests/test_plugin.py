@@ -7,7 +7,7 @@ try:
 except ImportError:
     import mock
 
-from ckan import model, plugins
+from ckan import model
 from ckan.tests import helpers as ckan_helpers, factories as ckan_factories
 
 from ckanext.archiver import model as archiver_model
@@ -40,8 +40,6 @@ class TestPlugin():
                     'format': format or 'TXT', 'description': 'Test'}
         ]}
         pkg = ckan_factories.Dataset(**pkg)
-        if plugins.toolkit.check_ckan_version(max_version="2.8"):
-            model.repo.new_revision()
         model.repo.commit()
         return pkg
 

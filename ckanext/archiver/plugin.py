@@ -10,15 +10,10 @@ from . import helpers, lib
 from .interfaces import IPipe
 from .logic import action, auth
 from .model import Archival, aggregate_archivals_for_a_dataset
+from .plugin_mixins.flask_plugin import MixinPlugin
 from .tasks import notify_package
 
 log = logging.getLogger(__name__)
-
-
-if p.toolkit.check_ckan_version("2.9"):
-    from .plugin_mixins.flask_plugin import MixinPlugin
-else:
-    from .plugin_mixins.pylons_plugin import MixinPlugin
 
 
 class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetForm):
@@ -72,51 +67,18 @@ class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetFor
             return False
         # therefore operation=changed
 
-        # 2.9 does not have revisions so archive anyway
-        if p.toolkit.check_ckan_version(min_version='2.9.0'):
-            return True
-
         # check to see if resources are added, deleted or URL changed
 
-        # Since 'revisions' is a deprecated feature in CKAN,
-        # try to use activity stream to check if dataset changed
+        # Try to use activity stream to check if dataset changed
         context = {'model': model, 'session': model.Session, 'ignore_auth': True, 'user': None}
-        if p.toolkit.check_ckan_version(min_version='2.9.0'):
-            data_dict = {'id': package.id, 'limit': 2}
+        data_dict = {'id': package.id, 'limit': 2}
 
-            activity_list = p.toolkit.get_action('package_activity_list')(context, data_dict)
-            if len(activity_list) <= 1:
-                log.warn('No sign of previous package - will archive anyway')
-                return True
-            old_act = p.toolkit.get_action('activity_data_show')(context, {'id': activity_list[1]['id']})
-            old_pkg_dict = old_act['package']
-        else:
-            # look for the latest revision
-            rev_list = package.all_related_revisions
-            if not rev_list:
-                log.debug('No sign of previous revisions - will archive')
-                return True
-            # I am not confident we can rely on the info about the current
-            # revision, because we are still in the 'before_commit' stage. So
-            # simply ignore that if it's returned.
-            if hasattr(model.Session, 'revision') and rev_list[0][0].id == model.Session.revision.id:
-                rev_list = rev_list[1:]
-            if not rev_list:
-                log.warn('No sign of previous revisions - will archive')
-                return True
-            previous_revision = rev_list[0][0]
-            log.debug('Comparing with revision: %s %s',
-                      previous_revision.timestamp, previous_revision.id)
-
-            # get the package as it was at that previous revision
-            context['revision_id'] = previous_revision.id
-            data_dict = {'id': package.id}
-            try:
-                old_pkg_dict = p.toolkit.get_action('package_show')(
-                    context, data_dict)
-            except p.toolkit.ObjectNotFound:
-                log.warn('No sign of previous package - will archive anyway')
-                return True
+        activity_list = p.toolkit.get_action('package_activity_list')(context, data_dict)
+        if len(activity_list) <= 1:
+            log.warn('No sign of previous package - will archive anyway')
+            return True
+        old_act = p.toolkit.get_action('activity_data_show')(context, {'id': activity_list[1]['id']})
+        old_pkg_dict = old_act['package']
 
         # has the licence changed?
         old_licence = (old_pkg_dict['license_id'],

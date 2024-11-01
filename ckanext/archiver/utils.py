@@ -1,6 +1,5 @@
 # encoding: utf-8
 
-import itertools
 import logging
 import os
 import re
@@ -8,18 +7,15 @@ import shutil
 import six
 from six.moves.urllib.parse import urlparse
 from sqlalchemy import func
+from sqlalchemy.util import OrderedDict
 import sys
 from time import sleep
 
 from ckan import model
 from ckan.common import _, c
 from ckan.lib import uploader
-from ckan.plugins.toolkit import abort, check_access, check_ckan_version, \
+from ckan.plugins.toolkit import abort, check_access, \
     config, get_action, NotAuthorized, ObjectNotFound
-try:
-    from collections import OrderedDict  # from python 2.7
-except ImportError:
-    from sqlalchemy.util import OrderedDict
 
 log = logging.getLogger(__name__)
 
@@ -193,26 +189,13 @@ def _get_packages_and_resources_in_args(identifiers, queue):
 
     log.info('Queue: %s', queue)
     for package in packages:
-        if check_ckan_version(max_version='2.2.99'):
-            # earlier CKANs had ResourceGroup
-            pkg_resources = \
-                [resource for resource in
-                    itertools.chain.from_iterable(
-                        (rg.resources_all
-                         for rg in package.resource_groups_all)
-                    )
-                 if res.state == 'active']
-        else:
-            pkg_resources = \
-                [resource for resource in package.resources_all
-                 if resource.state == 'active']
+        pkg_resources = \
+            [resource for resource in package.resources_all
+             if resource.state == 'active']
         yield package, True, len(pkg_resources), None
 
     for resource in resources:
-        if check_ckan_version(max_version='2.2.99'):
-            package = resource.resource_group.package
-        else:
-            package = resource.package
+        package = resource.package
         yield resource, False, None, package
 
 
@@ -443,12 +426,7 @@ def migrate_archiver_dirs():
         # check the package isn't deleted
         # Need to refresh the resource's session
         resource = model.Session.query(model.Resource).get(resource.id)
-        if check_ckan_version(max_version='2.2.99'):
-            package = None
-            if resource.resource_group:
-                package = resource.resource_group.package
-        else:
-            package = resource.package
+        package = resource.package
 
         if package and package.state == model.State.DELETED:
             print('Package is deleted')

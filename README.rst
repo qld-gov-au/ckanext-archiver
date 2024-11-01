@@ -39,7 +39,7 @@ Other extensions can subscribe to the archiver's ``IPipe`` interface to hear abo
 
 Archiver works on Celery queues, so when Archiver is notified of a dataset/resource being created or updated, it puts an 'update request' on a queue. Celery calls the Archiver 'update task' to do each archival. You can start Celery with multiple processes, to archive in parallel.
 
-You can also trigger an archival using paster on the command-line.
+You can also trigger an archival using 'ckan' on the command-line.
 
 By default, two queues are used:
 
@@ -69,8 +69,8 @@ To install ckanext-archiver:
 
 4. Now create the database tables::
 
-     paster --plugin=ckanext-archiver archiver init --config=production.ini
-     paster --plugin=ckanext-report report initdb --config=production.ini
+     ckan -c <path to CKAN config> archiver init
+     ckan -c <path to CKAN config> report initdb
 
 4. Add ``archiver report`` to the ``ckan.plugins`` setting in your CKAN
    config file (by default the config file is located at
@@ -112,7 +112,7 @@ NB Previously you needed both ckanext-archiver and ckanext-qa to see the broken 
 
 6. Create the new database tables::
 
-     paster --plugin=ckanext-archiver archiver init --config=production.ini
+     ckan -c <path to CKAN config> archiver init
 
 7. Ensure the archiver dependencies are installed::
 
@@ -132,7 +132,7 @@ Migrations post 2.0
 Over time it is possible that the database structure will change.  In these cases you can use the migrate command to update the database schema.
 
     ::
-        paster --plugin=ckanext-archiver archiver migrate -c <path to CKAN ini file>
+        ckan -c <path to CKAN config> archiver migrate
 
 This is only necessary if you update ckanext-archiver and already have the database tables in place.
 
@@ -248,7 +248,7 @@ Config settings
 
     Configure the reports to be generated each night using cron. e.g.::
 
-        0 6  * * *  www-data  /usr/lib/ckan/default/bin/paster --plugin=ckanext-report report generate --config=/etc/ckan/default/production.ini
+        0 6  * * *  www-data  /usr/lib/ckan/default/bin/ckan -c /etc/ckan/default/production.ini report generate
 
 5.  Your web server should serve the files from the archive_dir.
 
@@ -281,38 +281,26 @@ applies whatever the format.
 Using Archiver
 --------------
 
-Prior to Ckan 2.7 make sure that Celery is running for each queue. For test/local use, you can run::
-
-    paster --plugin=ckanext-archiver celeryd2 run all -c development.ini
-
-However in production you'd run the priority and bulk queues separately, or else the priority queue will not have any priority over the bulk queue. This can be done by running these two commands in separate terminals::
-
-    paster --plugin=ckanext-archiver celeryd2 run priority -c production.ini
-    paster --plugin=ckanext-archiver celeryd2 run bulk -c production.ini
-
-For production use, we recommend setting up Celery to run with supervisord. `apt-get install supervisor` and use `bin/celery-supervisor.conf` as a configuration template.
-
-If you are running CKAN 2.7 or higher, configure job workers instead http://docs.ckan.org/en/2.8/maintaining/background-tasks.html#using-supervisor
 For production use, we recommend setting up job workers to run with supervisord. `apt-get install supervisor` and use `bin/supervisor-ckan-archiver.conf` as a configuration template. Which would start running these two commands::
 
-    paster --plugin=ckan jobs worker priority -c production.ini
-    paster --plugin=ckan jobs worker bulk -c production.ini
+    ckan -c production.ini jobs worker priority
+    ckan -c production.ini jobs worker bulk
 
 An archival can be triggered by adding a dataset with a resource or updating a resource URL. Alternatively you can run::
 
-    paster --plugin=ckanext-archiver archiver update [dataset] --queue=priority -c <path to CKAN config>
+    ckan -c <path to CKAN config> archiver update [dataset] --queue=priority
 
 Here ``dataset`` is a CKAN dataset name or ID, or you can omit it to archive all datasets. i.e. ::
 
-    paster --plugin=ckanext-archiver archiver update -c <path to CKAN config>
+    ckan -c <path to CKAN config> archiver update
 
 For a full list of manual commands run::
 
-    paster --plugin=ckanext-archiver archiver --help
+    ckan -c <path to CKAN config> archiver --help
 
 Once you've done some archiving you can generate a Broken Links report::
 
-    paster --plugin=ckanext-report report generate broken-links --config=production.ini
+    ckan -c <path to CKAN config> report generate broken-links
 
 And view it on your CKAN site at ``/report/broken-links``.
 
@@ -332,7 +320,7 @@ To run the tests:
 
 3. From the CKAN root directory (not the extension root) do::
 
-    (pyenv)~/pyenv/src/ckan$ nosetests --ckan ../ckanext-archiver/tests/ --with-pylons=../ckanext-archiver/test-core.ini
+    (pyenv)~/pyenv/src/ckan$ pytest --ckan ../ckanext-archiver/tests/ --ckan-ini=../ckanext-archiver/test-core.ini
 
 
 Translations
@@ -374,7 +362,7 @@ The archiver information is not appearing in the API (package_show)
 
 i.e. if you browse this path on your website: `/api/action/package_show?id=<package_name>` then you don't see the `archiver` key at the dataset level or resource level.
 
-Check the `paster archiver update` command completed ok. Check that the `paster celeryd2 run` has done the archiving ok. Check the dataset has at least one resource. Check that you have ``archiver`` in your ckan.plugins and have restarted CKAN.
+Check the `ckan archiver update` command completed ok. Check that the `ckan jobs worker bulk` has done the archiving ok. Check the dataset has at least one resource. Check that you have ``archiver`` in your ckan.plugins and have restarted CKAN.
 
 'SSL handshake' error
 ~~~~~~~~~~~~~~~~~~~~~
