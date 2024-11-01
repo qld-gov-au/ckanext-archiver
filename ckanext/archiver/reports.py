@@ -1,10 +1,7 @@
 # encoding: utf-8
 
 import copy
-try:
-    from collections import OrderedDict  # from python 2.7
-except ImportError:
-    from sqlalchemy.util import OrderedDict
+from sqlalchemy.util import OrderedDict
 
 from ckan.common import _
 import ckan.model as model
@@ -48,8 +45,6 @@ def broken_links_index(include_sub_organizations=False):
         num_resources = model.Session.query(model.Package)\
             .filter_by(owner_org=org.id)\
             .filter_by(state='active')
-        if p.toolkit.check_ckan_version(max_version='2.2.99'):
-            num_resources = num_resources.join(model.ResourceGroup)
         num_resources = num_resources \
             .join(model.Resource)\
             .filter_by(state='active')\
@@ -226,8 +221,6 @@ def broken_links_for_organization(organization, include_sub_organizations=False)
                         .count()
     num_resources = model.Session.query(model.Resource)\
                          .filter_by(state='active')
-    if p.toolkit.check_ckan_version(max_version='2.2.99'):
-        num_resources = num_resources.join(model.ResourceGroup)
     num_resources = num_resources \
         .join(model.Package)\
         .filter(model.Package.owner_org.in_(org_ids))\

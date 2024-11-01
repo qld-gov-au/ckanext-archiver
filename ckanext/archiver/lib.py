@@ -3,8 +3,6 @@
 import logging
 from six import text_type as str
 
-import ckan.plugins as p
-
 from ckanext.archiver.tasks import update_package, update_resource
 
 log = logging.getLogger(__name__)
@@ -27,11 +25,7 @@ def compat_enqueue(name, fn, queue, args=[], kwargs={}):
 
 
 def create_archiver_resource_task(resource, queue):
-    if p.toolkit.check_ckan_version(max_version='2.2.99'):
-        # earlier CKANs had ResourceGroup
-        package = resource.resource_group.package
-    else:
-        package = resource.package
+    package = resource.package
 
     compat_enqueue('archiver.update_resource', update_resource, queue, kwargs={'resource_id': resource.id})
 
