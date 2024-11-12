@@ -7,7 +7,7 @@ import shutil
 import six
 from six.moves.urllib.parse import urlparse
 from sqlalchemy import func
-from sqlalchemy.util import OrderedDict
+from collections import OrderedDict
 import sys
 from time import sleep
 

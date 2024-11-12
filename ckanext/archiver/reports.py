@@ -1,7 +1,7 @@
 # encoding: utf-8
 
 import copy
-from sqlalchemy.util import OrderedDict
+from collections import OrderedDict
 
 from ckan.common import _
 import ckan.model as model
