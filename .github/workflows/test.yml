@@ -25,16 +25,16 @@ jobs:
     needs: lint
     strategy:
       matrix:
-        ckan-version: ["2.10", 2.9, 2.9-py2, 2.8, 2.7]
+        ckan-version: ["2.11", "2.10", 2.9]
       fail-fast: false
 
     name: CKAN ${{ matrix.ckan-version }}
     runs-on: ubuntu-latest
     container:
-      image: openknowledge/ckan-dev:${{ matrix.ckan-version }}
+      image: ckan/ckan-dev:${{ matrix.ckan-version }}
     services:
       solr:
-        image: ckan/ckan-solr:${{ matrix.ckan-version }}
+        image: ckan/ckan-solr:${{ matrix.ckan-version }}-solr9
       postgres:
         image: ckan/ckan-postgres-dev:${{ matrix.ckan-version }}
         env:
@@ -57,6 +57,7 @@ jobs:
 
       - name: Install requirements
         run: |
+          pip install "setuptools>=44.1.0,<71"
           pip install -r dev-requirements.txt
           pip install -r requirements.txt
           pip install -e .

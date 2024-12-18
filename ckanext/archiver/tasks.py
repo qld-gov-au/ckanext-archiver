@@ -42,26 +42,6 @@ USER_AGENT = 'ckanext-archiver'
 # New version now encapsulates downloading via stream or redirect link.
 uploaderHasDownloadEnabled = hasattr(DefaultResourceUpload, "download")
 
-# CKAN 2.7 introduces new jobs system
-if toolkit.check_ckan_version(max_version='2.6.99'):
-    from ckan.lib.celery_app import celery
-
-    @celery.task(name="archiver.update_resource")
-    def update_resouce_celery(*args, **kwargs):
-        update_resource(*args, **kwargs)
-
-    @celery.task(name="archiver.update_package")
-    def update_package_celery(*args, **kwargs):
-        update_package(*args, **kwargs)
-
-    @celery.task(name="archiver.clean")
-    def clean_celery(*args, **kwargs):
-        clean(*args, **kwargs)
-
-    @celery.task(name="archiver.link_checker")
-    def link_checker_celery(*args, **kwargs):
-        link_checker(*args, **kwargs)
-
 
 class ArchiverError(Exception):
     pass
@@ -707,7 +687,7 @@ def tidy_url(url):
             parts[2] = quote(parts[2].encode('utf-8'))
             parts[1] = quote(parts[1].encode('utf-8'))
             url = urlunparse(parts)
-    url = six.text_type(url)
+    url = str(url)
 
     # strip whitespace from url
     # (browsers appear to do this)
@@ -760,7 +740,7 @@ def _save_resource(resource, response, max_file_size, chunk_size=1024 * 16):
 
     os.close(fd)
 
-    content_hash = six.text_type(resource_hash.hexdigest())
+    content_hash = str(resource_hash.hexdigest())
     return length, content_hash, tmp_resource_file_path
 
 
