@@ -3,3 +3,4 @@ pytest-ckan
 pytest-cov
 
 -e git+https://github.com/qld-gov-au/ckanext-report.git@develop#egg=ckanext-report
+zipp>=3.19.1 # not directly required, pinned by Snyk to avoid a vulnerability
