@@ -10,12 +10,14 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
       - name: Install requirements
-        run: pip install flake8 pycodestyle
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 pycodestyle
       - name: Check syntax
         run: flake8 . --count --select=E901,E999,F821,F822,F823 --show-source --statistics --exclude ckan
       - name: Run flake8
@@ -25,13 +27,19 @@ jobs:
     needs: lint
     strategy:
       matrix:
-        ckan-version: ["2.11", "2.10", 2.9]
+        ckan-version: ['2.11', '2.10', '2.9']
+        experimental: [false]
+        include:
+          - ckan-version: 'master'
+            ckan-git-version: 'master'
+            experimental: true  #master is unstable, good to know if we are compatible or not
       fail-fast: false
 
     name: CKAN ${{ matrix.ckan-version }}
     runs-on: ubuntu-latest
     container:
       image: ckan/ckan-dev:${{ matrix.ckan-version }}
+      options: --user 0
     services:
       solr:
         image: ckan/ckan-solr:${{ matrix.ckan-version }}-solr9
@@ -43,7 +51,7 @@ jobs:
           POSTGRES_DB: postgres
         options: --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
       redis:
-        image: redis:3
+        image: redis
     env:
       CKAN_SQLALCHEMY_URL: postgresql://ckan_default:pass@postgres/ckan_test
       CKAN_DATASTORE_WRITE_URL: postgresql://datastore_write:pass@postgres/datastore_test
@@ -52,25 +60,38 @@ jobs:
       CKAN_REDIS_URL: redis://redis:6379/1
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
         timeout-minutes: 1
 
       - name: Install requirements
+        continue-on-error: ${{ matrix.experimental }}
         run: |
           pip install "setuptools>=44.1.0,<71"
           pip install -r dev-requirements.txt
           pip install -r requirements.txt
           pip install -e .
           # Replace default path to CKAN core config file with the one on the container
-          sed -i -e 's/use = config:.*/use = config:\/srv\/app\/src\/ckan\/test-core.ini/' test.ini
+          sed -i -e 's|use = config:.*|use = config:/srv/app/src/ckan/test-core.ini|' test.ini
+          if [ -d "/srv/app/src/ckan/ckanext/activity" ]; then
+              sed -i 's|^ckan.plugins =|ckan.plugins = activity|' test.ini
+          fi
         timeout-minutes: 10
 
       - name: Setup extension
+        continue-on-error: ${{ matrix.experimental }}
         run: |
           export CKAN_INI=test.ini
           chmod u+x bin/ckan_cli
           bin/ckan_cli db init
-          PASTER_PLUGIN=ckanext-archiver bin/ckan_cli archiver init
+          bin/ckan_cli archiver init
 
       - name: Run tests
-        run: pytest --ckan-ini=test.ini --cov=ckanext.archiver --disable-warnings ckanext/archiver/tests
+        continue-on-error: ${{ matrix.experimental }}
+        run: pytest --ckan-ini=test.ini --cov=ckanext.archiver --disable-warnings ckanext/archiver/tests --junit-xml=/tmp/junit/results.xml
+
+      - name: Test Summary
+        continue-on-error: ${{ matrix.experimental }}
+        uses: test-summary/action@v2
+        with:
+          paths: "/tmp/junit/results.xml"
+        if: always()

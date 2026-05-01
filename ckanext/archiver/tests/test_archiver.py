@@ -39,6 +39,7 @@ def get_logger():
 
 update_resource.get_logger = get_logger
 update_package.get_logger = get_logger
+plugin_list = "activity archiver testipipe" if plugins.toolkit.check_ckan_version('2.10') else "archiver testipipe"
 
 
 @pytest.mark.usefixtures(u"clean_db")
@@ -49,8 +50,10 @@ class TestLinkChecker:
 
     @pytest.fixture(autouse=True)
     @pytest.mark.usefixtures(u"clean_db")
-    @pytest.mark.ckan_config("ckan.plugins", "archiver")
-    def initial_data(self, clean_db):
+    @pytest.mark.ckan_config("ckan.plugins", plugin_list)
+    def initial_data(self, migrate_db_for):
+        if plugins.toolkit.check_ckan_version('2.11'):
+            migrate_db_for('activity')
         return {}
 
     def test_file_url(self):
@@ -142,7 +145,7 @@ class TestLinkChecker:
 @pytest.mark.usefixtures('with_plugins')
 @pytest.mark.ckan_config("ckanext-archiver.cache_url_root", "http://localhost:50001/resources/")
 @pytest.mark.ckan_config("ckanext-archiver.max_content_length", 1000000)
-@pytest.mark.ckan_config("ckan.plugins", "testipipe")
+@pytest.mark.ckan_config("ckan.plugins", plugin_list)
 class TestArchiver:
     """
     Tests for Archiver 'update_resource'/'update_package' tasks
@@ -150,7 +153,9 @@ class TestArchiver:
 
     @pytest.fixture(autouse=True)
     @pytest.mark.usefixtures(u"clean_db")
-    def initial_data(cls, clean_db):
+    def initial_data(cls, migrate_db_for):
+        if plugins.toolkit.check_ckan_version('2.11'):
+            migrate_db_for('activity')
         archiver_model.init_tables(model.meta.engine)
         cls.temp_dir = tempfile.mkdtemp()
 
@@ -366,8 +371,8 @@ class TestDownload:
     Doesn't need a fake CKAN to get/set the status of.
     '''
     @pytest.fixture(autouse=True)
-    @pytest.mark.usefixtures(u"clean_index")
-    def initialData(cls, clean_db):
+    @pytest.mark.usefixtures(u"clean_index", u"clean_db")
+    def initialData(cls):
         cls.fake_context = {
             'site_url': config.get('ckan.site_url_internally') or config['ckan.site_url'],
             'cache_url_root': config.get('ckanext-archiver.cache_url_root'),

@@ -1,4 +1,5 @@
 import pytest
+
 from ckanext.archiver.tests.mock_flask_server import create_app
 
 import threading
