@@ -367,7 +367,7 @@ class TestDownload:
     Doesn't need a fake CKAN to get/set the status of.
     '''
     @pytest.fixture(autouse=True)
-    @pytest.mark.usefixtures(u"clean_index")
+    @pytest.mark.usefixtures(u"clean_index", u"clean_db")
     def initialData(cls):
         cls.fake_context = {
             'site_url': config.get('ckan.site_url_internally') or config['ckan.site_url'],
