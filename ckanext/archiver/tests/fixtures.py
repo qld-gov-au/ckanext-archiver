@@ -1,7 +1,5 @@
 import pytest
 
-from ckan import plugins
-
 from ckanext.archiver.tests.mock_flask_server import create_app
 
 import threading
@@ -16,9 +14,3 @@ def client():
     thread.start()
 
     yield "http://127.0.0.1:" + str(port)
-
-
-@pytest.fixture(autouse=True)
-def migrate_activity_db(migrate_db_for):
-    if plugins.toolkit.check_ckan_version('2.11'):
-        migrate_db_for('activity')

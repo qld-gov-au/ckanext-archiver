@@ -19,8 +19,10 @@ plugin_list = "activity archiver testipipe" if plugins.toolkit.check_ckan_versio
 class TestApi(object):
 
     @pytest.fixture(autouse=True)
-    @pytest.mark.usefixtures(u"clean_db", u"migrate_activity_db")
-    def initial_data(cls):
+    @pytest.mark.usefixtures(u"clean_db")
+    def initial_data(cls, migrate_db_for):
+        if plugins.toolkit.check_ckan_version('2.11'):
+            migrate_db_for('activity')
         archiver_model.init_tables(model.meta.engine)
         cls.temp_dir = tempfile.mkdtemp()
 

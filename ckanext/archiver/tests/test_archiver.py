@@ -42,16 +42,18 @@ update_package.get_logger = get_logger
 plugin_list = "activity archiver testipipe" if plugins.toolkit.check_ckan_version('2.10') else "archiver testipipe"
 
 
-@pytest.mark.usefixtures(u"clean_db", u"migrate_activity_db")
+@pytest.mark.usefixtures(u"clean_db")
 class TestLinkChecker:
     """
     Tests for link checker task
     """
 
     @pytest.fixture(autouse=True)
-    @pytest.mark.usefixtures(u"clean_db", u"migrate_activity_db")
-    @pytest.mark.ckan_config("ckan.plugins", "archiver")
-    def initial_data(self):
+    @pytest.mark.usefixtures(u"clean_db")
+    @pytest.mark.ckan_config("ckan.plugins", plugin_list)
+    def initial_data(self, migrate_db_for):
+        if plugins.toolkit.check_ckan_version('2.11'):
+            migrate_db_for('activity')
         return {}
 
     def test_file_url(self):
@@ -150,8 +152,10 @@ class TestArchiver:
     """
 
     @pytest.fixture(autouse=True)
-    @pytest.mark.usefixtures(u"clean_db", u"migrate_activity_db")
-    def initial_data(cls):
+    @pytest.mark.usefixtures(u"clean_db")
+    def initial_data(cls, migrate_db_for):
+        if plugins.toolkit.check_ckan_version('2.11'):
+            migrate_db_for('activity')
         archiver_model.init_tables(model.meta.engine)
         cls.temp_dir = tempfile.mkdtemp()
 
