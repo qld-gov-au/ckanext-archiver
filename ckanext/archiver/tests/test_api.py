@@ -9,7 +9,7 @@ import ckan.tests.helpers as helpers
 from ckanext.archiver import model as archiver_model
 from ckanext.archiver.tasks import update_package
 
-plugin_list = "activity archiver testipipe" if plugins.toolkit.check_version('2.10') else "archiver testipipe"
+plugin_list = "activity archiver testipipe" if plugins.toolkit.check_ckan_version('2.10') else "archiver testipipe"
 
 
 @pytest.mark.usefixtures('with_plugins')

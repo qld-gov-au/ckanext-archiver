@@ -39,7 +39,7 @@ def get_logger():
 
 update_resource.get_logger = get_logger
 update_package.get_logger = get_logger
-plugin_list = "activity archiver testipipe" if plugins.toolkit.check_version('2.10') else "archiver testipipe"
+plugin_list = "activity archiver testipipe" if plugins.toolkit.check_ckan_version('2.10') else "archiver testipipe"
 
 
 @pytest.mark.usefixtures(u"clean_db")
