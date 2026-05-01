@@ -39,6 +39,7 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: ckan/ckan-dev:${{ matrix.ckan-version }}
+      options: --user 0
     services:
       solr:
         image: ckan/ckan-solr:${{ matrix.ckan-version }}-solr9
@@ -59,10 +60,6 @@ jobs:
       CKAN_REDIS_URL: redis://redis:6379/1
 
     steps:
-      # Patch https://github.com/actions/runner/issues/863
-      - name: Preserve $HOME set in the container
-        run: echo HOME=/root >> "$GITHUB_ENV"
-
       - uses: actions/checkout@v6
         timeout-minutes: 1
 
