@@ -39,6 +39,7 @@ def get_logger():
 
 update_resource.get_logger = get_logger
 update_package.get_logger = get_logger
+plugin_list = "activity archiver testipipe" if plugins.toolkit.check_version('2.10') else "archiver testipipe"
 
 
 @pytest.mark.usefixtures(u"clean_db")
@@ -142,7 +143,7 @@ class TestLinkChecker:
 @pytest.mark.usefixtures('with_plugins')
 @pytest.mark.ckan_config("ckanext-archiver.cache_url_root", "http://localhost:50001/resources/")
 @pytest.mark.ckan_config("ckanext-archiver.max_content_length", 1000000)
-@pytest.mark.ckan_config("ckan.plugins", "testipipe")
+@pytest.mark.ckan_config("ckan.plugins", plugin_list)
 class TestArchiver:
     """
     Tests for Archiver 'update_resource'/'update_package' tasks

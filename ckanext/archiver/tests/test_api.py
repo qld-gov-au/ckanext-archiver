@@ -9,11 +9,13 @@ import ckan.tests.helpers as helpers
 from ckanext.archiver import model as archiver_model
 from ckanext.archiver.tasks import update_package
 
+plugin_list = "activity archiver testipipe" if plugins.toolkit.check_version('2.10') else "archiver testipipe"
+
 
 @pytest.mark.usefixtures('with_plugins')
 @pytest.mark.ckan_config("ckanext-archiver.cache_url_root", "http://localhost:50001/resources/")
 @pytest.mark.ckan_config("ckanext-archiver.max_content_length", 1000000)
-@pytest.mark.ckan_config("ckan.plugins", "archiver testipipe")
+@pytest.mark.ckan_config("ckan.plugins", plugin_list)
 class TestApi(object):
 
     @pytest.fixture(autouse=True)
