@@ -10,7 +10,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
@@ -59,7 +59,7 @@ jobs:
       CKAN_REDIS_URL: redis://redis:6379/1
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         timeout-minutes: 1
 
       - name: Install requirements
@@ -86,6 +86,7 @@ jobs:
         run: pytest --ckan-ini=test.ini --cov=ckanext.archiver --disable-warnings ckanext/archiver/tests --junit-xml=/tmp/junit/results.xml
 
       - name: Test Summary
+        continue-on-error: ${{ matrix.experimental }}
         uses: test-summary/action@v2
         with:
           paths: "/tmp/junit/results.xml"
