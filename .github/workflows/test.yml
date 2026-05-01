@@ -72,7 +72,7 @@ jobs:
           pip install -e .
           # Replace default path to CKAN core config file with the one on the container
           sed -i -e 's|use = config:.*|use = config:/srv/app/src/ckan/test-core.ini|' test.ini
-          if [ -d "$SRC_DIR/ckan/ckanext/activity" ]; then
+          if [ -d "/srv/app/src/ckan/ckanext/activity" ]; then
               sed -i 's|^ckan.plugins =|ckan.plugins = activity|' test.ini
           fi
         timeout-minutes: 10
