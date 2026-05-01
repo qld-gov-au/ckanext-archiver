@@ -6,7 +6,7 @@ import re
 import shutil
 import six
 from six.moves.urllib.parse import urlparse
-from sqlalchemy import func
+from sqlalchemy import func, text
 from collections import OrderedDict
 import sys
 from time import sleep
@@ -382,7 +382,7 @@ def migrate():
 
     MIGRATIONS_MODIFY = OrderedDict({})
 
-    q = "select column_name from INFORMATION_SCHEMA.COLUMNS where table_name = 'archival';"
+    q = text("select column_name from INFORMATION_SCHEMA.COLUMNS where table_name = 'archival';")
     current_cols = list([m[0] for m in model.Session.execute(q)])
     for k, v in MIGRATIONS_ADD.items():
         if k not in current_cols:
