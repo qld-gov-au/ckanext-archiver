@@ -172,23 +172,15 @@ def broken_links_for_organization(organization, include_sub_organizations=False)
         elif er.startswith("DATA4NR"):
             via = "Data4nr"
 
-        try:
-            archived_resource = model.Session.query(model.ResourceRevision)\
-                .filter_by(id=resource.id)\
-                .filter_by(revision_timestamp=archival.resource_timestamp)\
-                .first() or resource
-            archived_url = archived_resource.url
-        except AttributeError:
-            # CKAN 2.9 doesn't have revisions, use activity stream
-            archived_url = resource.url
-            pkg_activity_list = p.toolkit.get_action("package_activity_list")(
-                context={}, data_dict={"id": archival.package_id, "limit": 1}
-            )
-            if pkg_activity_list and "resources" in pkg_activity_list[0]["data"]["package"]:
-                for activity_resource in pkg_activity_list[0]["data"]["package"]["resources"]:
-                    if activity_resource["id"] == archival.resource_id:
-                        archived_url = activity_resource["url"]
-                        break
+        archived_url = resource.url
+        pkg_activity_list = p.toolkit.get_action("package_activity_list")(
+            context={}, data_dict={"id": archival.package_id, "limit": 1}
+        )
+        if pkg_activity_list and "resources" in pkg_activity_list[0]["data"]["package"]:
+            for activity_resource in pkg_activity_list[0]["data"]["package"]["resources"]:
+                if activity_resource["id"] == archival.resource_id:
+                    archived_url = activity_resource["url"]
+                    break
         row_data = OrderedDict((
             ('dataset_title', pkg.title),
             ('dataset_name', pkg.name),

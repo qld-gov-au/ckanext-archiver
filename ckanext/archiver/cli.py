@@ -4,7 +4,7 @@ import click
 from . import utils
 
 
-# Click commands for CKAN 2.9 and above
+# Click commands for CKAN
 
 def get_commands():
     return [archiver]
