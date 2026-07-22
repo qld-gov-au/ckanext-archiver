@@ -7,11 +7,12 @@ on:
       - master
 
 jobs:
+  # Quick check so we don't waste minutes if there's a Flake8 error
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.x'
       - name: Install requirements
@@ -24,11 +25,15 @@ jobs:
   test:
     needs: lint
     strategy:
-      matrix:
-        ckan-version: ["2.11", "2.10", 2.9]
       fail-fast: false
+      matrix:
+        ckan-version: ['2.12', '2.11', '2.10', '2.9']
+        experimental: [false]
+        include:
+          - ckan-version: 'master'
+            experimental: true  # master is unstable, good to know if we are compatible or not
 
-    name: CKAN ${{ matrix.ckan-version }}
+    name: ${{ matrix.experimental && '**Fail_Ignored** ' || '' }} CKAN ${{ matrix.ckan-version }}
     runs-on: ubuntu-latest
     container:
       image: ckan/ckan-dev:${{ matrix.ckan-version }}
@@ -52,8 +57,9 @@ jobs:
       CKAN_REDIS_URL: redis://redis:6379/1
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
         timeout-minutes: 1
+        continue-on-error: ${{ matrix.experimental }}
 
       - name: Install requirements
         run: |
@@ -64,6 +70,7 @@ jobs:
           # Replace default path to CKAN core config file with the one on the container
           sed -i -e 's/use = config:.*/use = config:\/srv\/app\/src\/ckan\/test-core.ini/' test.ini
         timeout-minutes: 10
+        continue-on-error: ${{ matrix.experimental }}
 
       - name: Setup extension
         run: |
@@ -71,6 +78,8 @@ jobs:
           chmod u+x bin/ckan_cli
           bin/ckan_cli db init
           PASTER_PLUGIN=ckanext-archiver bin/ckan_cli archiver init
+        continue-on-error: ${{ matrix.experimental }}
 
       - name: Run tests
         run: pytest --ckan-ini=test.ini --cov=ckanext.archiver --disable-warnings ckanext/archiver/tests
+        continue-on-error: ${{ matrix.experimental }}
