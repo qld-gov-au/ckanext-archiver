@@ -42,14 +42,13 @@ update_package.get_logger = get_logger
 
 
 @pytest.mark.usefixtures(u"clean_db")
+@pytest.mark.ckan_config("ckan.plugins", "archiver")
 class TestLinkChecker:
     """
     Tests for link checker task
     """
 
     @pytest.fixture(autouse=True)
-    @pytest.mark.usefixtures(u"clean_db")
-    @pytest.mark.ckan_config("ckan.plugins", "archiver")
     def initial_data(self, clean_db):
         return {}
 
@@ -139,7 +138,7 @@ class TestLinkChecker:
         assert result
 
 
-@pytest.mark.usefixtures('with_plugins')
+@pytest.mark.usefixtures('with_plugins', 'clean_db')
 @pytest.mark.ckan_config("ckanext-archiver.cache_url_root", "http://localhost:50001/resources/")
 @pytest.mark.ckan_config("ckanext-archiver.max_content_length", 1000000)
 @pytest.mark.ckan_config("ckan.plugins", "testipipe")
@@ -149,7 +148,6 @@ class TestArchiver:
     """
 
     @pytest.fixture(autouse=True)
-    @pytest.mark.usefixtures(u"clean_db")
     def initial_data(cls, clean_db):
         archiver_model.init_tables(model.meta.engine)
         cls.temp_dir = tempfile.mkdtemp()
@@ -360,13 +358,13 @@ class TestArchiver:
         return json.loads(result)
 
 
+@pytest.mark.usefixtures(u"clean_index")
 class TestDownload:
     '''Tests of the download method (and things it calls).
 
     Doesn't need a fake CKAN to get/set the status of.
     '''
     @pytest.fixture(autouse=True)
-    @pytest.mark.usefixtures(u"clean_index")
     def initialData(cls, clean_db):
         cls.fake_context = {
             'site_url': config.get('ckan.site_url_internally') or config['ckan.site_url'],
