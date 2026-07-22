@@ -42,7 +42,7 @@ update_package.get_logger = get_logger
 
 
 @pytest.mark.usefixtures(u"clean_db")
-@pytest.mark.ckan_config("ckan.plugins", "archiver")
+@pytest.mark.ckan_config("ckan.plugins", "archiver activity")
 class TestLinkChecker:
     """
     Tests for link checker task
@@ -141,7 +141,7 @@ class TestLinkChecker:
 @pytest.mark.usefixtures('with_plugins', 'clean_db')
 @pytest.mark.ckan_config("ckanext-archiver.cache_url_root", "http://localhost:50001/resources/")
 @pytest.mark.ckan_config("ckanext-archiver.max_content_length", 1000000)
-@pytest.mark.ckan_config("ckan.plugins", "testipipe")
+@pytest.mark.ckan_config("ckan.plugins", "testipipe activity")
 class TestArchiver:
     """
     Tests for Archiver 'update_resource'/'update_package' tasks
@@ -328,7 +328,7 @@ class TestArchiver:
         assert params.get('package_id') is None
         assert params.get('resource_id') == res_id
 
-    @pytest.mark.ckan_config("ckan.plugins", "archiver testipipe")
+    @pytest.mark.ckan_config("ckan.plugins", "archiver testipipe activity")
     def test_ipipe_notified_dataset(self, client):
         url = client + '/?status=200&content=test&content-type=csv'
         testipipe = plugins.get_plugin('testipipe')
