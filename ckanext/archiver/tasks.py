@@ -18,7 +18,7 @@ from time import sleep
 
 from requests.packages import urllib3
 
-from ckan import model, plugins as p
+from ckan import model, logic, plugins as p
 from ckan.common import _
 from ckan.lib import uploader
 from ckan.lib.search.index import PackageSearchIndex
@@ -177,12 +177,21 @@ def _update_search_index(package_id, log):
     '''
     Tells CKAN to update its search index for a given package.
     '''
-    package_index = PackageSearchIndex()
-    context_ = {'model': model, 'ignore_auth': True, 'session': model.Session,
-                'use_cache': False, 'validate': False}
-    package = toolkit.get_action('package_show')(context_, {'id': package_id})
-    package_index.index_package(package, defer_commit=False)
-    log.info('Search indexed %s', package['name'])
+    try:
+        toolkit.get_action('package_reindex')({'ignore_auth': True}, {'id': package_id})
+    except KeyError:
+        if hasattr(logic, 'index_update_package'):
+            logic.index_update_package({'ignore_auth': True}, package_id)
+        else:
+            package_index = PackageSearchIndex()
+            context_ = {
+                'model': model, 'ignore_auth': True, 'session': model.Session,
+                'use_cache': False, 'validate': False
+            }
+            package = toolkit.get_action('package_show')(context_, {'id': package_id})
+            package_index.index_package(package, defer_commit=False)
+
+    log.info('Search indexed %s', package_id)
 
 
 def _update_resource(resource_id, queue, log):
