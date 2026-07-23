@@ -13,3 +13,8 @@ def client():
     thread.start()
 
     yield "http://127.0.0.1:" + str(port)
+
+
+@pytest.fixture
+def reset_db(clean_db, migrate_db_for):
+    migrate_db_for("activity")

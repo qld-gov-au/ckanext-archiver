@@ -28,7 +28,6 @@ class TestPlugin():
 
     @classmethod
     def setup_class(cls):
-        ckan_helpers.reset_db()
         archiver_model.init_tables(model.meta.engine)
 
     def _test_package(self, url='http://example.com', url_type='link', format=None):
