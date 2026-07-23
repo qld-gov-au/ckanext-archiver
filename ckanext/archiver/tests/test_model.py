@@ -10,11 +10,11 @@ import ckanext.archiver.model as archiver_model
 Archival = archiver_model.Archival
 
 
-@pytest.mark.usefixtures(u"clean_db")
+@pytest.mark.usefixtures(u"reset_db")
 class TestArchival(object):
 
     @pytest.fixture(autouse=True)
-    def initial_data(self, clean_db):
+    def initial_data(self, reset_db):
         archiver_model.init_tables(model.meta.engine)
 
     def test_create(self):
