@@ -149,12 +149,6 @@ class TestArchiver:
         archiver_model.init_tables(model.meta.engine)
         cls.temp_dir = tempfile.mkdtemp()
 
-    def teardown(self):
-        pkg = model.Package.get(u'testpkg')
-        if pkg:
-            pkg.purge()
-            model.repo.commit_and_remove()
-
     def _test_package(self, url, format=None):
         pkg = {'resources': [
             {'url': url, 'format': format or 'TXT', 'description': 'Test'}
@@ -367,14 +361,8 @@ class TestDownload:
             'cache_url_root': config.get('ckanext-archiver.cache_url_root'),
         }
 
-    def teardown(self):
-        pkg = model.Package.get(u'testpkg')
-        if pkg:
-            pkg.purge()
-            model.repo.commit_and_remove()
-
     def _test_resource(self, url, format=None):
-        pkg = {'name': 'testpkg', 'resources': [
+        pkg = {'resources': [
             {'url': url, 'format': format or 'TXT', 'description': 'Test'}
         ]}
         pkg = ckan_factories.Dataset(**pkg)
