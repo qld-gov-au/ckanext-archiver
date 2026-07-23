@@ -10,13 +10,13 @@ from ckanext.archiver import model as archiver_model
 from ckanext.archiver.tasks import update_package
 
 
-@pytest.mark.usefixtures('with_plugins', 'reset_db')
+@pytest.mark.usefixtures('with_plugins')
 @pytest.mark.ckan_config("ckanext-archiver.cache_url_root", "http://localhost:50001/resources/")
 @pytest.mark.ckan_config("ckanext-archiver.max_content_length", 1000000)
 class TestApi(object):
 
     @pytest.fixture(autouse=True)
-    def initial_data(cls, reset_db):
+    def initial_data(cls):
         archiver_model.init_tables(model.meta.engine)
         cls.temp_dir = tempfile.mkdtemp()
 
