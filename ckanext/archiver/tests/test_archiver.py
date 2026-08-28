@@ -41,16 +41,13 @@ update_resource.get_logger = get_logger
 update_package.get_logger = get_logger
 
 
-@pytest.mark.usefixtures(u"clean_db")
 class TestLinkChecker:
     """
     Tests for link checker task
     """
 
     @pytest.fixture(autouse=True)
-    @pytest.mark.usefixtures(u"clean_db")
-    @pytest.mark.ckan_config("ckan.plugins", "archiver")
-    def initial_data(self, clean_db):
+    def initial_data(self):
         return {}
 
     def test_file_url(self):
@@ -142,23 +139,15 @@ class TestLinkChecker:
 @pytest.mark.usefixtures('with_plugins')
 @pytest.mark.ckan_config("ckanext-archiver.cache_url_root", "http://localhost:50001/resources/")
 @pytest.mark.ckan_config("ckanext-archiver.max_content_length", 1000000)
-@pytest.mark.ckan_config("ckan.plugins", "testipipe")
 class TestArchiver:
     """
     Tests for Archiver 'update_resource'/'update_package' tasks
     """
 
     @pytest.fixture(autouse=True)
-    @pytest.mark.usefixtures(u"clean_db")
-    def initial_data(cls, clean_db):
+    def initial_data(cls):
         archiver_model.init_tables(model.meta.engine)
         cls.temp_dir = tempfile.mkdtemp()
-
-    def teardown(self):
-        pkg = model.Package.get(u'testpkg')
-        if pkg:
-            pkg.purge()
-            model.repo.commit_and_remove()
 
     def _test_package(self, url, format=None):
         pkg = {'resources': [
@@ -330,7 +319,6 @@ class TestArchiver:
         assert params.get('package_id') is None
         assert params.get('resource_id') == res_id
 
-    @pytest.mark.ckan_config("ckan.plugins", "archiver testipipe")
     def test_ipipe_notified_dataset(self, client):
         url = client + '/?status=200&content=test&content-type=csv'
         testipipe = plugins.get_plugin('testipipe')
@@ -360,27 +348,21 @@ class TestArchiver:
         return json.loads(result)
 
 
+@pytest.mark.usefixtures(u"clean_index")
 class TestDownload:
     '''Tests of the download method (and things it calls).
 
     Doesn't need a fake CKAN to get/set the status of.
     '''
     @pytest.fixture(autouse=True)
-    @pytest.mark.usefixtures(u"clean_index")
-    def initialData(cls, clean_db):
+    def initialData(cls):
         cls.fake_context = {
             'site_url': config.get('ckan.site_url_internally') or config['ckan.site_url'],
             'cache_url_root': config.get('ckanext-archiver.cache_url_root'),
         }
 
-    def teardown(self):
-        pkg = model.Package.get(u'testpkg')
-        if pkg:
-            pkg.purge()
-            model.repo.commit_and_remove()
-
     def _test_resource(self, url, format=None):
-        pkg = {'name': 'testpkg', 'resources': [
+        pkg = {'resources': [
             {'url': url, 'format': format or 'TXT', 'description': 'Test'}
         ]}
         pkg = ckan_factories.Dataset(**pkg)
