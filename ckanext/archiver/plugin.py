@@ -64,7 +64,7 @@ class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetFor
             # even if it has no resources, QA needs to show 0 stars against it
             return True
         elif operation == 'deleted':
-            log.debug('Deleted package - won\'t archive')
+            log.debug("Deleted package - won't archive")
             return False
         # therefore operation=changed
 
@@ -76,8 +76,9 @@ class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetFor
 
         try:
             activity_list = p.toolkit.get_action('package_activity_list')(context, data_dict)
-        except tk.NotFound:
-            activity_list = []
+        except tk.ObjectNotFound:
+            log.debug("Deleted package - won't archive")
+            return False
         if len(activity_list) <= 1:
             log.warn('No sign of previous package - will archive anyway')
             return True
