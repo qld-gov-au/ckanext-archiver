@@ -76,4 +76,4 @@ class TestPlugin():
             create_task.assert_not_called()
 
     def test_user_agent_string(self):
-        assert default_settings.USER_AGENT_STRING == 'CKAN http://test.ckan.net ckanext-archiver'
+        assert default_settings.USER_AGENT_STRING == 'CKAN http://localhost:5000 ckanext-archiver'
