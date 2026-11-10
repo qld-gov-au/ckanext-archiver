@@ -565,7 +565,7 @@ def archive_resource(context, resource, log, result=None, url_timeout=30):
     if not uploaderHasDownloadEnabled:
         archive_dir = os.path.join(settings.ARCHIVE_DIR, relative_archive_path)
         if not os.path.exists(archive_dir):
-            os.makedirs(archive_dir)
+            os.makedirs(archive_dir, exist_ok=True)
     # try to get a file name from the url
     parsed_url = urlparse(resource.get('url'))
     try:
