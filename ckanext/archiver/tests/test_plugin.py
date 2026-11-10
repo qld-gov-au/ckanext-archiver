@@ -10,7 +10,7 @@ except ImportError:
 from ckan import model
 from ckan.tests import helpers as ckan_helpers, factories as ckan_factories
 
-from ckanext.archiver import model as archiver_model
+from ckanext.archiver import default_settings, model as archiver_model
 
 
 # enable celery logging for when you run nosetests -s
@@ -74,3 +74,6 @@ class TestPlugin():
             # add a placeholder modification so the activity stream gets updated
             ckan_helpers.call_action('resource_patch', id=resource['id'])
             create_task.assert_not_called()
+
+    def test_user_agent_string(self):
+        assert default_settings.USER_AGENT_STRING == 'CKAN http://test.ckan.net ckanext-archiver'
