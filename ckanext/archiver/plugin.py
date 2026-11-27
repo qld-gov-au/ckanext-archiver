@@ -4,6 +4,7 @@ import logging
 
 from ckan import model
 from ckan import plugins as p
+import ckan.plugins.toolkit as tk
 
 from ckanext.report.interfaces import IReport
 from . import helpers, lib
@@ -63,7 +64,7 @@ class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetFor
             # even if it has no resources, QA needs to show 0 stars against it
             return True
         elif operation == 'deleted':
-            log.debug('Deleted package - won\'t archive')
+            log.debug("Deleted package - won't archive")
             return False
         # therefore operation=changed
 
@@ -73,7 +74,11 @@ class ArchiverPlugin(MixinPlugin, p.SingletonPlugin, p.toolkit.DefaultDatasetFor
         context = {'model': model, 'session': model.Session, 'ignore_auth': True, 'user': None}
         data_dict = {'id': package.id, 'limit': 2}
 
-        activity_list = p.toolkit.get_action('package_activity_list')(context, data_dict)
+        try:
+            activity_list = p.toolkit.get_action('package_activity_list')(context, data_dict)
+        except tk.ObjectNotFound:
+            log.debug("Deleted package - won't archive")
+            return False
         if len(activity_list) <= 1:
             log.warn('No sign of previous package - will archive anyway')
             return True

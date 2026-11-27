@@ -9,5 +9,6 @@ MAX_CONTENT_LENGTH = int(config.get('ckanext-archiver.max_content_length',
 
 USER_AGENT_STRING = config.get('ckanext-archiver.user_agent_string', None)
 if not USER_AGENT_STRING:
-    USER_AGENT_STRING = '%s %s ckanext-archiver' % (
-        config.get('ckan.site_title', ''), config.get('ckan.site_url'))
+    USER_AGENT_STRING = ' '.join(item for item in [
+        config.get('ckan.site_title'), config.get('ckan.site_url'), 'ckanext-archiver'
+    ] if item)
